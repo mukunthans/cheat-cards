@@ -8,6 +8,7 @@ grace, and the periodic room cleanup sweep. game.py stays pure and sync.
 from __future__ import annotations
 
 import asyncio
+import os
 import time
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
@@ -21,6 +22,15 @@ from room_manager import GRACE_MS, RoomError, RoomManager
 
 DOUBT_WINDOW_MS: int = 5_000
 CLEANUP_INTERVAL_S: int = 60
+
+# Comma-separated list of allowed client origins, e.g.
+# "https://cheat-cards.vercel.app,https://cheat-cards.example.com".
+# Unset (or "*") allows any origin — fine for local dev, loosen deliberately
+# in production by setting CORS_ORIGINS to the deployed client's real URL(s).
+_cors_env = os.environ.get("CORS_ORIGINS", "*").strip()
+CORS_ORIGINS: str | list[str] = (
+    "*" if _cors_env in ("", "*") else [o.strip() for o in _cors_env.split(",") if o.strip()]
+)
 
 
 def now_ms() -> int:
@@ -50,7 +60,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     sweeper.cancel()
 
 
-sio = socketio.AsyncServer(async_mode="asgi", cors_allowed_origins="*")
+sio = socketio.AsyncServer(async_mode="asgi", cors_allowed_origins=CORS_ORIGINS)
 app = FastAPI(lifespan=lifespan)
 asgi_app = socketio.ASGIApp(sio, other_asgi_app=app)
 
