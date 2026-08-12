@@ -7,6 +7,7 @@ cleanup()/remove_player() when they fire.
 
 from __future__ import annotations
 
+import os
 import random
 import string
 import uuid
@@ -15,7 +16,9 @@ from typing import Any
 
 from game import Event, Game, Settings
 
-GRACE_MS: int = 30_000  # disconnected seat held for 30 s
+# Disconnected seat held for 30 s. Env override exists ONLY so integration
+# tests can shrink the grace window; production uses the default.
+GRACE_MS: int = int(os.environ.get("CHEAT_GRACE_MS", "30000"))
 EMPTY_ROOM_TTL_MS: int = 10 * 60_000  # empty rooms deleted after 10 min
 FINISHED_ROOM_TTL_MS: int = 60 * 60_000  # finished games deleted after 60 min
 
