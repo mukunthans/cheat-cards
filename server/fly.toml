@@ -1,0 +1,33 @@
+# Fly.io app config for the Cheat Cards server. Run `fly launch` / `fly deploy`
+# from this `server/` directory so the Docker build context matches the
+# Dockerfile's COPY paths.
+# `fly launch` will ask to confirm or change the app name if
+# "cheat-cards-server" is already taken.
+app = "cheat-cards-server"
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  # Tighten this to your Netlify client URL once it's deployed, e.g.
+  # CORS_ORIGINS = "https://cheat-cards.netlify.app"
+  CORS_ORIGINS = "*"
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [[http_service.checks]]
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "10s"
+    method = "GET"
+    path = "/health"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"
