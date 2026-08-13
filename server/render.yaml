@@ -1,0 +1,17 @@
+# Render Blueprint for the Cheat Cards server. From the Render dashboard:
+# New -> Blueprint -> connect this repo -> Render reads this file automatically
+# (set the blueprint's root/repo appropriately if prompted). No credit card
+# required for the free plan.
+services:
+  - type: web
+    name: cheat-cards-server
+    runtime: docker
+    dockerfilePath: ./server/Dockerfile
+    dockerContext: ./server
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      # Tighten this to your Netlify client URL once it's deployed, e.g.
+      # CORS_ORIGINS = "https://cheat-cards.netlify.app"
+      - key: CORS_ORIGINS
+        value: "*"
