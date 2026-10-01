@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400;0,500;0,700;0,800;1,400;1,500&family=Work+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  body { margin:0; background:#04140e; }
+  a { color:#facc15; text-decoration:none; }
+  a:hover { color:#fde68a; }
+  @keyframes popIn { 0%{transform:scale(.6);opacity:0} 100%{transform:scale(1);opacity:1} }
+  @keyframes flipIn { 0%{transform:rotateY(90deg);opacity:0} 100%{transform:rotateY(0);opacity:1} }
+  @keyframes pulseRing { 0%{box-shadow:0 0 0 0 rgba(250,204,21,.55)} 70%{box-shadow:0 0 0 12px rgba(250,204,21,0)} 100%{box-shadow:0 0 0 0 rgba(250,204,21,0)} }
+  @keyframes shrinkBar { 0%{width:100%} 100%{width:0%} }
+  @keyframes slideUp { 0%{transform:translateY(12px);opacity:0} 100%{transform:translateY(0);opacity:1} }
+  @keyframes dealIn { 0%{transform:translateY(40px) rotate(-8deg) scale(.9);opacity:0} 100%{transform:translateY(0) rotate(0) scale(1);opacity:1} }
+  @keyframes hover3 { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+  @keyframes goldSweep { 0%{background-position:-220% 0} 100%{background-position:220% 0} }
+  @keyframes tick { 0%,100%{transform:scale(1)} 50%{transform:scale(1.06)} }
+  @keyframes shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-5px)} 40%{transform:translateX(5px)} 60%{transform:translateX(-3px)} 80%{transform:translateX(3px)} }
+  @keyframes slowSpin { 0%{transform:rotate(0)} 100%{transform:rotate(360deg)} }
+  @keyframes riseFade { 0%{transform:translateY(0);opacity:.9} 100%{transform:translateY(-70px);opacity:0} }
+  @keyframes revealFlip { 0%{transform:rotateY(180deg)} 55%{transform:rotateY(180deg)} 100%{transform:rotateY(0)} }
+  @keyframes stampIn { 0%{transform:scale(2.4) rotate(-14deg);opacity:0} 60%{transform:scale(.92) rotate(-4deg);opacity:1} 100%{transform:scale(1) rotate(-4deg);opacity:1} }
+  @keyframes breathe { 0%,100%{opacity:.55} 50%{opacity:1} }
+</style>
+</helmet>
+
+<div style="min-height:100vh;background:#04140e;font-family:'Work Sans',system-ui,sans-serif;color:#dff0e7;padding:64px 56px 140px;box-sizing:border-box">
+
+  <div style="display:flex;flex-direction:column;gap:22px;max-width:1280px;margin:0 auto 84px">
+    <div style="display:flex;align-items:baseline;gap:16px;flex-wrap:wrap">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#facc15">Visual identity &amp; screen spec</div>
+      <div style="height:1px;flex:1;background:linear-gradient(90deg,rgba(250,204,21,.5),rgba(250,204,21,0))"></div>
+    </div>
+    <h1 style="font-family:'Alegreya',Georgia,serif;font-weight:800;font-size:88px;line-height:.92;margin:0;color:#f8f4e9;letter-spacing:-.02em">Cheat Cards</h1>
+    <p style="font-family:'Alegreya',Georgia,serif;font-style:italic;font-size:26px;line-height:1.45;margin:0;max-width:720px;color:#9dc7b2">Everyone's lying. Someone's about to get caught. A felt-table bluffing game for two to four friends, built for one thumb on a couch.</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;padding:7px 12px;border-radius:999px;border:1px solid rgba(250,204,21,.35);color:#facc15">React + Tailwind only</span>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;padding:7px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.16);color:#9dc7b2">Mobile-first 390px</span>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;padding:7px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.16);color:#9dc7b2">Desktop 1280px</span>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;padding:7px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.16);color:#9dc7b2">No paid assets</span>
+    </div>
+  </div>
+
+  <div style="max-width:1280px;margin:0 auto 96px;display:flex;flex-direction:column;gap:34px">
+    <div style="display:flex;align-items:center;gap:18px">
+      <h2 style="font-family:'Alegreya',Georgia,serif;font-weight:700;font-size:34px;margin:0;color:#f8f4e9">Tokens</h2>
+      <div style="height:1px;flex:1;background:rgba(255,255,255,.12)"></div>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6f9d86">tailwind.config.js → theme.extend</span>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:14px">
+      <div style="border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.1)">
+        <div style="height:88px;background:#062219"></div>
+        <div style="padding:10px 12px;background:rgba(255,255,255,.03)"><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#f8f4e9">felt-dark</div><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6f9d86">#062219</div></div>
+      </div>
+      <div style="border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.1)">
+        <div style="height:88px;background:#0b3d2e"></div>
+        <div style="padding:10px 12px;background:rgba(255,255,255,.03)"><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#f8f4e9">felt</div><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6f9d86">#0b3d2e</div></div>
+      </div>
+      <div style="border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.1)">
+        <div style="height:88px;background:#155a3f"></div>
+        <div style="padding:10px 12px;background:rgba(255,255,255,.03)"><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#f8f4e9">felt-light</div><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6f9d86">#155a3f</div></div>
+      </div>
+      <div style="border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.1)">
+        <div style="height:88px;background:#1e7a55"></div>
+        <div style="padding:10px 12px;background:rgba(255,255,255,.03)"><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#f8f4e9">felt-rail <span style="color:#facc15">new</span></div><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6f9d86">#1e7a55</div></div>
+      </div>
+      <div style="border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.1)">
+        <div style="height:88px;background:#3b2519"></div>
+        <div style="padding:10px 12px;background:rgba(255,255,255,.03)"><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#f8f4e9">wood <span style="color:#facc15">new</span></div><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6f9d86">#3b2519</div></div>
+      </div>
+      <div style="border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.1)">
+        <div style="height:88px;background:#04140e"></div>
+        <div style="padding:10px 12px;background:rgba(255,255,255,.03)"><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#f8f4e9">felt-void <span style="color:#facc15">new</span></div><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6f9d86">#04140e</div></div>
+      </div>
+      <div style="border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.1)">
+        <div style="height:88px;background:#fef3c7"></div>
+        <div style="padding:10px 12px;background:rgba(255,255,255,.03)"><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#f8f4e9">gold-200</div><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6f9d86">#fef3c7</div></div>
+      </div>
+      <div style="border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.1)">
+        <div style="height:88px;background:#fde68a"></div>
+        <div style="padding:10px 12px;background:rgba(255,255,255,.03)"><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#f8f4e9">gold-300</div><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6f9d86">#fde68a</div></div>
+      </div>
+      <div style="border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.1)">
+        <div style="height:88px;background:#facc15"></div>
+        <div style="padding:10px 12px;background:rgba(255,255,255,.03)"><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#f8f4e9">gold <span style="color:#facc15">base</span></div><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6f9d86">#facc15</div></div>
+      </div>
+      <div style="border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.1)">
+        <div style="height:88px;background:#d9a406"></div>
+        <div style="padding:10px 12px;background:rgba(255,255,255,.03)"><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#f8f4e9">gold-600</div><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6f9d86">#d9a406</div></div>
+      </div>
+      <div style="border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.1)">
+        <div style="height:88px;background:#8a6604"></div>
+        <div style="padding:10px 12px;background:rgba(255,255,255,.03)"><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#f8f4e9">gold-800</div><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6f9d86">#8a6604</div></div>
+      </div>
+      <div style="border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.1)">
+        <div style="height:88px;background:#f8f4e9"></div>
+        <div style="padding:10px 12px;background:rgba(255,255,255,.03)"><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#f8f4e9">ivory <span style="color:#facc15">card face</span></div><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6f9d86">#f8f4e9</div></div>
+      </div>
+      <div style="border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.1)">
+        <div style="height:88px;background:#14261e"></div>
+        <div style="padding:10px 12px;background:rgba(255,255,255,.03)"><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#f8f4e9">ink <span style="color:#facc15">card text</span></div><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6f9d86">#14261e</div></div>
+      </div>
+      <div style="border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.1)">
+        <div style="height:88px;background:#e5484d"></div>
+        <div style="padding:10px 12px;background:rgba(255,255,255,.03)"><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#f8f4e9">lie <span style="color:#facc15">new</span></div><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6f9d86">#e5484d</div></div>
+      </div>
+      <div style="border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.1)">
+        <div style="height:88px;background:#34d399"></div>
+        <div style="padding:10px 12px;background:rgba(255,255,255,.03)"><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#f8f4e9">truth <span style="color:#facc15">new</span></div><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6f9d86">#34d399</div></div>
+      </div>
+      <div style="border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.1)">
+        <div style="height:88px;background:#9dc7b2"></div>
+        <div style="padding:10px 12px;background:rgba(255,255,255,.03)"><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#f8f4e9">felt-fog <span style="color:#facc15">new</span></div><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6f9d86">#9dc7b2</div></div>
+      </div>
+      <div style="border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.1)">
+        <div style="height:88px;background:#e11d48"></div>
+        <div style="padding:10px 12px;background:rgba(255,255,255,.03)"><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#f8f4e9">seat-1</div><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6f9d86">rose-600</div></div>
+      </div>
+      <div style="border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.1)">
+        <div style="height:88px;background:linear-gradient(90deg,#0284c7 33%,#d97706 33%,#d97706 66%,#7c3aed 66%)"></div>
+        <div style="padding:10px 12px;background:rgba(255,255,255,.03)"><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#f8f4e9">seat-2/3/4</div><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6f9d86">sky · amber · violet 600</div></div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1.15fr 1fr;gap:24px;margin-top:12px">
+      <div style="border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:28px 30px;background:rgba(255,255,255,.02);display:flex;flex-direction:column;gap:20px">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#facc15">Type</div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <div style="font-family:'Alegreya',Georgia,serif;font-weight:800;font-size:52px;line-height:1;color:#f8f4e9">Alegreya 800</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6f9d86">font-display · headers, card numerals, big moments · Georgia fallback</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <div style="font-family:'Alegreya',Georgia,serif;font-style:italic;font-weight:500;font-size:26px;line-height:1.2;color:#9dc7b2">Alegreya Italic 500 — the mischief voice</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6f9d86">italic · taunts, subtitles, celebratory lines</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <div style="font-family:'Work Sans',sans-serif;font-weight:600;font-size:22px;color:#f8f4e9">Work Sans 400/500/600/700</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6f9d86">font-sans (default) · all UI, labels, buttons, body</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <div style="font-family:'JetBrains Mono',monospace;font-weight:500;font-size:22px;letter-spacing:.14em;color:#facc15">7K2QX</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6f9d86">font-mono · room codes, countdowns, card counts only</div>
+        </div>
+      </div>
+
+      <div style="border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:28px 30px;background:rgba(255,255,255,.02);display:flex;flex-direction:column;gap:16px">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#facc15">Scale &amp; surface</div>
+        <div style="display:flex;flex-direction:column;gap:11px;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.6;color:#b9d9c9">
+          <div><span style="color:#facc15">spacing</span> — 2/3/4/6/8/12/16 only. Screen gutter <b style="color:#f8f4e9">px-4</b> mobile, <b style="color:#f8f4e9">px-10</b> desktop. Stack rhythm <b style="color:#f8f4e9">gap-3</b> tight, <b style="color:#f8f4e9">gap-6</b> between blocks.</div>
+          <div><span style="color:#facc15">radius</span> — cards <b style="color:#f8f4e9">rounded-xl</b>, panels <b style="color:#f8f4e9">rounded-2xl</b>, chips/buttons <b style="color:#f8f4e9">rounded-full</b>.</div>
+          <div><span style="color:#facc15">hit targets</span> — every tappable ≥ <b style="color:#f8f4e9">h-12</b> (48px). Hand cards <b style="color:#f8f4e9">w-16 h-24</b> with <b style="color:#f8f4e9">-mr-5</b> fan overlap.</div>
+          <div><span style="color:#facc15">shadow-card</span> 0 2px 4px rgba(0,0,0,.35), 0 1px 1px rgba(0,0,0,.2)</div>
+          <div><span style="color:#facc15">shadow-card-lg</span> 0 8px 20px rgba(0,0,0,.45)</div>
+          <div><span style="color:#facc15">shadow-gold</span> 0 0 0 1px rgba(250,204,21,.5), 0 8px 28px rgba(250,204,21,.22) <span style="color:#facc15">new</span></div>
+          <div><span style="color:#facc15">felt surface</span> — <b style="color:#f8f4e9">bg-felt</b> + radial vignette to <b style="color:#f8f4e9">felt-dark</b> at edges, plus a 4px 45° <b style="color:#f8f4e9">white/[.03]</b> repeating-linear-gradient weave. Both live as Tailwind arbitrary background values, no CSS file.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="max-width:1280px;margin:0 auto 96px;display:flex;flex-direction:column;gap:34px">
+    <div style="display:flex;align-items:center;gap:18px">
+      <h2 style="font-family:'Alegreya',Georgia,serif;font-weight:700;font-size:34px;margin:0;color:#f8f4e9">Component library</h2>
+      <div style="height:1px;flex:1;background:rgba(255,255,255,.12)"></div>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6f9d86">one concept per file, reused everywhere</span>
+    </div>
+
+    <!-- CARD -->
+    <div style="border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:28px 30px;background:rgba(255,255,255,.02)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:20px">
+        <div style="font-family:'Alegreya',Georgia,serif;font-weight:700;font-size:22px;color:#f8f4e9">Card</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6f9d86">face-down · face-up · selected · playing (mid-flip)</div>
+      </div>
+      <div style="display:flex;gap:20px;align-items:flex-end;flex-wrap:wrap">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
+          <div style="width:72px;height:104px;border-radius:12px;border:2px solid rgba(255,255,255,.2);background:linear-gradient(135deg,#155a3f,#062219);box-shadow:0 2px 4px rgba(0,0,0,.35),0 1px 1px rgba(0,0,0,.2);display:flex;align-items:center;justify-content:center">
+            <div style="width:66%;height:66%;border-radius:6px;border:1px solid rgba(255,255,255,.1);background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.06) 0px,rgba(255,255,255,.06) 4px,transparent 4px,transparent 8px)"></div>
+          </div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#6f9d86">face-down</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
+          <div style="width:72px;height:104px;border-radius:12px;border:2px solid #cbd5c9;background:#f8f4e9;color:#14261e;box-shadow:0 2px 4px rgba(0,0,0,.35),0 1px 1px rgba(0,0,0,.2);display:flex;align-items:center;justify-content:center;font-family:'Alegreya',Georgia,serif;font-weight:800;font-size:34px">7</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#6f9d86">face-up, resting</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
+          <div style="width:72px;height:112px;border-radius:12px;border:2px solid #facc15;background:#f8f4e9;color:#14261e;box-shadow:0 0 0 1px rgba(250,204,21,.5),0 8px 28px rgba(250,204,21,.22);display:flex;align-items:center;justify-content:center;font-family:'Alegreya',Georgia,serif;font-weight:800;font-size:34px;transform:translateY(-8px)">4</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#6f9d86">selected · -translate-y-2</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
+          <div style="width:72px;height:104px;border-radius:12px;border:2px solid rgba(255,255,255,.15);background:linear-gradient(135deg,#155a3f,#062219);box-shadow:0 2px 4px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;opacity:.4"></div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#6f9d86">disabled (not your turn)</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:10px;perspective:400px">
+          <div style="width:72px;height:104px;border-radius:12px;border:2px solid #facc15;background:#f8f4e9;box-shadow:0 8px 20px rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;animation:flipIn .35s ease-out;font-family:'Alegreya',Georgia,serif;font-weight:800;font-size:34px;color:#14261e">9</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#6f9d86">flip-in · 350ms, 90°→0°</div>
+        </div>
+      </div>
+      <div style="margin-top:18px;font-family:'JetBrains Mono',monospace;font-size:11px;color:#9dc7b2;line-height:1.7">sizes: <b style="color:#f8f4e9">sm</b> 40×56 (opponent stacks) · <b style="color:#f8f4e9">md</b> 56×80 (pile) · <b style="color:#f8f4e9">lg</b> 64×96 (own hand, mobile scales to 72×104). Face is ivory #f8f4e9 on ink #14261e, numeral in Alegreya 800 — never Work Sans, numbers should feel like they're stamped, not typed.</div>
+    </div>
+
+    <!-- PILE -->
+    <div style="border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:28px 30px;background:rgba(255,255,255,.02)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:20px">
+        <div style="font-family:'Alegreya',Georgia,serif;font-weight:700;font-size:22px;color:#f8f4e9">Pile</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6f9d86">empty · stacking · declared-value locked · burning</div>
+      </div>
+      <div style="display:flex;gap:36px;align-items:center;flex-wrap:wrap">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:12px">
+          <div style="width:80px;height:80px;border-radius:50%;border:2px dashed rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:10px;color:#4d7a63">empty</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#6f9d86">round not started</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:12px">
+          <div style="position:relative;width:80px;height:80px">
+            <div style="position:absolute;top:6px;left:8px;width:56px;height:80px;border-radius:10px;border:2px solid rgba(255,255,255,.15);background:linear-gradient(135deg,#155a3f,#062219);transform:rotate(-6deg)"></div>
+            <div style="position:absolute;top:2px;left:14px;width:56px;height:80px;border-radius:10px;border:2px solid rgba(255,255,255,.18);background:linear-gradient(135deg,#155a3f,#062219);transform:rotate(4deg)"></div>
+            <div style="position:absolute;top:0;left:12px;width:56px;height:80px;border-radius:10px;border:2px solid rgba(255,255,255,.22);background:linear-gradient(135deg,#155a3f,#062219);box-shadow:0 8px 20px rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:14px;color:#facc15;font-weight:600">11</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+            <div style="font-family:'Alegreya',Georgia,serif;font-style:italic;font-weight:600;font-size:15px;color:#f8f4e9">Claiming: 7s</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#6f9d86">badge pinned above stack, gold border pill</div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:12px">
+          <div style="position:relative;width:80px;height:80px;opacity:.5">
+            <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:30px;animation:riseFade 1.1s ease-out infinite">🔥</div>
+            <div style="position:absolute;top:8px;left:12px;width:56px;height:80px;border-radius:10px;border:2px solid rgba(255,255,255,.1);background:linear-gradient(135deg,#155a3f,#062219)"></div>
+          </div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#6f9d86">burning · fades + rises out, 400ms</div>
+        </div>
+      </div>
+      <div style="margin-top:18px;font-family:'JetBrains Mono',monospace;font-size:11px;color:#9dc7b2;line-height:1.7">the declared-value badge is the single most important string on the whole table — gold text on felt-dark, pill border, sits centered just above the stack. Pile count in mono, small and quiet; it's flavor, not the headline.</div>
+    </div>
+
+    <!-- PLAYERLIST -->
+    <div style="border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:28px 30px;background:rgba(255,255,255,.02)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:20px">
+        <div style="font-family:'Alegreya',Georgia,serif;font-weight:700;font-size:22px;color:#f8f4e9">PlayerList</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6f9d86">seat chip: active · self · host · quota-met · reconnecting · offline</div>
+      </div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 14px 8px 8px;border-radius:14px;background:rgba(0,0,0,.25);border:2px solid #facc15;box-shadow:0 0 0 0 rgba(250,204,21,.55);animation:pulseRing 1.6s ease-out infinite">
+          <div style="width:36px;height:36px;border-radius:50%;background:#e11d48;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px">MA</div>
+          <div><div style="font-size:14px;font-weight:600;color:#f8f4e9;display:flex;gap:6px;align-items:center">Marco <span style="font-family:'JetBrains Mono',monospace;font-size:9px;color:#facc15">★</span></div><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#9dc7b2">🂠 9 · doubts 1/2</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 14px 8px 8px;border-radius:14px;background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.12)">
+          <div style="width:36px;height:36px;border-radius:50%;background:#0284c7;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px">LU</div>
+          <div><div style="font-size:14px;font-weight:600;color:#f8f4e9">Luz <span style="font-family:'JetBrains Mono',monospace;font-size:9px;color:#fde68a">(you)</span></div><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#9dc7b2">🂠 6 · doubts 2/2 <span style="color:#34d399">✓</span></div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 14px 8px 8px;border-radius:14px;background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.12)">
+          <div style="width:36px;height:36px;border-radius:50%;background:#d97706;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;opacity:.4;filter:grayscale(1)">JP</div>
+          <div><div style="font-size:14px;font-weight:600;color:#f8f4e9">Jun</div><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#e5484d">reconnecting… 18s</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 14px 8px 8px;border-radius:14px;background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.12)">
+          <div style="width:36px;height:36px;border-radius:50%;background:#7c3aed;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;opacity:.4;filter:grayscale(1)">PR</div>
+          <div><div style="font-size:14px;font-weight:600;color:#f8f4e9">Priya</div><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#e5484d">offline</div></div>
+        </div>
+      </div>
+      <div style="margin-top:18px;font-family:'JetBrains Mono',monospace;font-size:11px;color:#9dc7b2;line-height:1.7">active seat gets the gold pulse ring (reused from doubt button) so "whose turn" reads at a glance without extra copy. Quota checkmark is emerald, never gold — gold stays reserved for "your move" / primary actions only.</div>
+    </div>
+
+    <!-- DOUBT BUTTON -->
+    <div style="border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:28px 30px;background:rgba(255,255,255,.02)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:20px">
+        <div style="font-family:'Alegreya',Georgia,serif;font-weight:700;font-size:22px;color:#f8f4e9">DoubtButton</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6f9d86">hidden for the player who played · countdown ring · pressed</div>
+      </div>
+      <div style="display:flex;gap:28px;align-items:center;flex-wrap:wrap">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
+          <div style="position:relative;width:96px;height:96px">
+            <svg width="96" height="96" style="position:absolute;inset:0;transform:rotate(-90deg)">
+              <circle cx="48" cy="48" r="42" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="6"></circle>
+              <circle cx="48" cy="48" r="42" fill="none" stroke="#e5484d" stroke-width="6" stroke-linecap="round" stroke-dasharray="264" stroke-dashoffset="95"></circle>
+            </svg>
+            <div style="position:absolute;inset:6px;border-radius:50%;background:#7f1d1d;border:2px solid #e5484d;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff">
+              <div style="font-family:'Alegreya',Georgia,serif;font-weight:800;font-size:18px;letter-spacing:.02em">DOUBT</div>
+              <div style="font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:600">3s</div>
+            </div>
+          </div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#6f9d86">ring drains 5s → 0, red stroke over track</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
+          <div style="width:96px;height:96px;border-radius:50%;background:#991b1b;border:2px solid #e5484d;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;transform:scale(.94)">
+            <div style="font-family:'Alegreya',Georgia,serif;font-weight:800;font-size:18px">DOUBT</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:15px">0s</div>
+          </div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#6f9d86">pressed / window closing</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
+          <div style="width:96px;height:96px;border-radius:50%;border:2px dashed rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:10px;color:#4d7a63;text-align:center;padding:8px">not shown<br/>(you played)</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#6f9d86">hidden state</div>
+        </div>
+      </div>
+      <div style="margin-top:18px;font-family:'JetBrains Mono',monospace;font-size:11px;color:#9dc7b2;line-height:1.7">red is used ONLY here and in the lie/truth stamps — it's the game's one "danger" color, kept rare so it hits hard. Ring is an SVG stroke-dashoffset animated via a Tailwind arbitrary keyframe reading a CSS var updated on a rAF tick from the server deadline timestamp — never a client-only setTimeout.</div>
+    </div>
+
+    <!-- DECLAREBAR -->
+    <div style="border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:28px 30px;background:rgba(255,255,255,.02)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:20px">
+        <div style="font-family:'Alegreya',Georgia,serif;font-weight:700;font-size:22px;color:#f8f4e9">DeclareBar</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6f9d86">0–10 value picker, shown only when starting a round</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:14px;max-width:640px">
+        <div style="font-family:'Alegreya',Georgia,serif;font-style:italic;font-size:15px;color:#9dc7b2">You're starting the round — what are you claiming?</div>
+        <div style="display:flex;gap:7px;flex-wrap:wrap">
+          <div style="width:40px;height:40px;border-radius:10px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:14px;color:#dff0e7">0</div>
+          <div style="width:40px;height:40px;border-radius:10px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:14px;color:#dff0e7">1</div>
+          <div style="width:40px;height:40px;border-radius:10px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:14px;color:#dff0e7">2</div>
+          <div style="width:40px;height:40px;border-radius:10px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:14px;color:#dff0e7">3</div>
+          <div style="width:40px;height:40px;border-radius:10px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:14px;color:#dff0e7">4</div>
+          <div style="width:40px;height:40px;border-radius:10px;background:#facc15;border:1px solid #facc15;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:14px;color:#14261e;font-weight:700;transform:scale(1.12);box-shadow:0 0 0 1px rgba(250,204,21,.5),0 8px 28px rgba(250,204,21,.22)">5</div>
+          <div style="width:40px;height:40px;border-radius:10px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:14px;color:#dff0e7">6</div>
+          <div style="width:40px;height:40px;border-radius:10px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:14px;color:#dff0e7">7</div>
+          <div style="width:40px;height:40px;border-radius:10px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:14px;color:#dff0e7">8</div>
+          <div style="width:40px;height:40px;border-radius:10px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:14px;color:#dff0e7">9</div>
+          <div style="width:40px;height:40px;border-radius:10px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:14px;color:#dff0e7">10</div>
+        </div>
+      </div>
+      <div style="margin-top:18px;font-family:'JetBrains Mono',monospace;font-size:11px;color:#9dc7b2;line-height:1.7">a single row of 11 chips (wraps on 390px into two rows of six/five), selected chip pops to gold-fill + scale-110. Sits directly above the PLAY button, replacing the DoubtButton's slot since both never show at once.</div>
+    </div>
+
+  </div>
+  <!-- HOME -->
+  <div style="max-width:1280px;margin:0 auto 110px;display:flex;flex-direction:column;gap:34px">
+    <div style="display:flex;align-items:center;gap:18px">
+      <h2 style="font-family:'Alegreya',Georgia,serif;font-weight:700;font-size:34px;margin:0;color:#f8f4e9">1 · Home</h2>
+      <div style="height:1px;flex:1;background:rgba(255,255,255,.12)"></div>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6f9d86">default · creating… · join error</span>
+    </div>
+
+    <div style="display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start">
+      <!-- mobile default -->
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#6f9d86">mobile 390 · default</div>
+        <div style="width:390px;height:760px;border-radius:28px;overflow:hidden;background:radial-gradient(ellipse at 50% 30%,#155a3f,#0b3d2e 55%,#062219 100%);position:relative;box-shadow:0 20px 60px rgba(0,0,0,.5);display:flex;flex-direction:column;align-items:center;padding:64px 28px;box-sizing:border-box">
+          <div style="position:absolute;inset:0;background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.025) 0px,rgba(255,255,255,.025) 3px,transparent 3px,transparent 9px)"></div>
+          <div style="position:relative;text-align:center;margin-top:40px">
+            <div style="font-family:'Alegreya',Georgia,serif;font-weight:800;font-size:56px;color:#f8f4e9;line-height:.95;animation:popIn .3s ease-out">Cheat<br/>Cards</div>
+            <div style="font-family:'Alegreya',Georgia,serif;font-style:italic;font-size:16px;color:#9dc7b2;margin-top:14px">everyone's lying tonight</div>
+          </div>
+          <div style="position:relative;margin-top:56px;width:100%;display:flex;flex-direction:column;gap:14px">
+            <button style="height:56px;border-radius:16px;border:none;background:linear-gradient(180deg,#fde68a,#facc15);color:#3b2801;font-family:'Work Sans',sans-serif;font-weight:700;font-size:17px;box-shadow:0 8px 20px rgba(0,0,0,.35),0 0 0 1px rgba(250,204,21,.4)">Start a game</button>
+            <div style="text-align:center;font-family:'JetBrains Mono',monospace;font-size:11px;color:#6f9d86;margin:4px 0">— or join one already going —</div>
+            <div style="display:flex;gap:8px">
+              <input placeholder="ROOM CODE" style="flex:1;height:52px;border-radius:14px;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.2);color:#f8f4e9;font-family:'JetBrains Mono',monospace;letter-spacing:.18em;text-align:center;font-size:15px;text-transform:uppercase"/>
+            </div>
+            <input placeholder="Your name" style="height:52px;border-radius:14px;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.2);color:#f8f4e9;font-family:'Work Sans',sans-serif;padding:0 16px;font-size:15px"/>
+            <button style="height:52px;border-radius:14px;border:1px solid rgba(250,204,21,.5);background:transparent;color:#facc15;font-family:'Work Sans',sans-serif;font-weight:600;font-size:15px">Join room</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- mobile loading -->
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#6f9d86">mobile 390 · creating room…</div>
+        <div style="width:390px;height:760px;border-radius:28px;overflow:hidden;background:radial-gradient(ellipse at 50% 30%,#155a3f,#0b3d2e 55%,#062219 100%);position:relative;box-shadow:0 20px 60px rgba(0,0,0,.5);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px">
+          <div style="width:64px;height:64px;position:relative">
+            <div style="width:56px;height:56px;border-radius:12px;border:2px solid #f8f4e9;background:linear-gradient(135deg,#155a3f,#062219);position:absolute;top:0;left:4px;animation:slowSpin 1.4s linear infinite;display:flex;align-items:center;justify-content:center;font-family:'Alegreya',Georgia,serif;font-weight:800;color:#facc15;font-size:22px">?</div>
+          </div>
+          <div style="font-family:'Alegreya',Georgia,serif;font-style:italic;font-size:18px;color:#f8f4e9;animation:breathe 1.4s ease-in-out infinite">Shuffling up a table…</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6f9d86">dealing your room code</div>
+        </div>
+      </div>
+
+      <!-- mobile error -->
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#6f9d86">mobile 390 · join error</div>
+        <div style="width:390px;height:760px;border-radius:28px;overflow:hidden;background:radial-gradient(ellipse at 50% 30%,#155a3f,#0b3d2e 55%,#062219 100%);position:relative;box-shadow:0 20px 60px rgba(0,0,0,.5);display:flex;flex-direction:column;align-items:center;padding:64px 28px;box-sizing:border-box">
+          <div style="font-family:'Alegreya',Georgia,serif;font-weight:800;font-size:44px;color:#f8f4e9;margin-top:40px">Cheat Cards</div>
+          <div style="width:100%;margin-top:64px;display:flex;flex-direction:column;gap:14px">
+            <div style="display:flex;gap:8px">
+              <input value="8F3ZQ" style="flex:1;height:52px;border-radius:14px;border:2px solid #e5484d;background:rgba(229,72,77,.12);color:#f8f4e9;font-family:'JetBrains Mono',monospace;letter-spacing:.18em;text-align:center;font-size:15px;animation:shake .4s ease-in-out"/>
+            </div>
+            <div style="display:flex;gap:6px;align-items:center;padding-left:4px">
+              <span style="font-size:13px">🙃</span>
+              <span style="font-family:'Work Sans',sans-serif;font-size:13px;color:#fca5a5">No table's running that code. Typo, or it already ended.</span>
+            </div>
+            <input placeholder="Your name" style="height:52px;border-radius:14px;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.2);color:#f8f4e9;font-family:'Work Sans',sans-serif;padding:0 16px;font-size:15px"/>
+            <button style="height:52px;border-radius:14px;border:1px solid rgba(250,204,21,.5);background:transparent;color:#facc15;font-family:'Work Sans',sans-serif;font-weight:600;font-size:15px">Try again</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- desktop default -->
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#6f9d86">desktop 1280 · default</div>
+        <div style="width:760px;height:520px;border-radius:20px;overflow:hidden;background:radial-gradient(ellipse at 50% 35%,#155a3f,#0b3d2e 55%,#062219 100%);position:relative;box-shadow:0 20px 60px rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;gap:70px;padding:0 60px;box-sizing:border-box">
+          <div style="position:absolute;inset:0;background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.025) 0px,rgba(255,255,255,.025) 3px,transparent 3px,transparent 9px)"></div>
+          <div style="position:relative;text-align:left">
+            <div style="font-family:'Alegreya',Georgia,serif;font-weight:800;font-size:72px;color:#f8f4e9;line-height:.92">Cheat<br/>Cards</div>
+            <div style="font-family:'Alegreya',Georgia,serif;font-style:italic;font-size:19px;color:#9dc7b2;margin-top:16px;max-width:320px">A friendly game of lying to people you like.</div>
+          </div>
+          <div style="position:relative;width:300px;display:flex;flex-direction:column;gap:14px;background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:26px">
+            <button style="height:52px;border-radius:14px;border:none;background:linear-gradient(180deg,#fde68a,#facc15);color:#3b2801;font-family:'Work Sans',sans-serif;font-weight:700;font-size:16px;box-shadow:0 8px 20px rgba(0,0,0,.35)">Start a game</button>
+            <div style="text-align:center;font-family:'JetBrains Mono',monospace;font-size:10px;color:#6f9d86">— or join —</div>
+            <input placeholder="ROOM CODE" style="height:48px;border-radius:12px;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.2);color:#f8f4e9;font-family:'JetBrains Mono',monospace;letter-spacing:.18em;text-align:center;font-size:14px"/>
+            <input placeholder="Your name" style="height:48px;border-radius:12px;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.2);color:#f8f4e9;font-family:'Work Sans',sans-serif;padding:0 14px;font-size:14px"/>
+            <button style="height:48px;border-radius:12px;border:1px solid rgba(250,204,21,.5);background:transparent;color:#facc15;font-family:'Work Sans',sans-serif;font-weight:600;font-size:14px">Join room</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#9dc7b2;line-height:1.7;max-width:820px">
+      <b style="color:#facc15">anim:</b> title <b style="color:#f8f4e9">animate-pop-in</b> on mount. Loading uses a face-down Card spun via a Tailwind arbitrary <b style="color:#f8f4e9">animate-[spin_1.4s_linear_infinite]</b> plus a breathing caption — no spinner icon. Error input gets a one-shot <b style="color:#f8f4e9">animate-[shake_.4s]</b> triggered on the ack error, border flips to red-500, no toast needed since the message sits inline.
+    </div>
+  </div>
+
+  <!-- LOBBY -->
+  <div style="max-width:1280px;margin:0 auto 110px;display:flex;flex-direction:column;gap:34px">
+    <div style="display:flex;align-items:center;gap:18px">
+      <h2 style="font-family:'Alegreya',Georgia,serif;font-weight:700;font-size:34px;margin:0;color:#f8f4e9">2 · Lobby</h2>
+      <div style="height:1px;flex:1;background:rgba(255,255,255,.12)"></div>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6f9d86">host view · guest view · host disconnected</span>
+    </div>
+
+    <div style="display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start">
+      <!-- mobile host -->
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#6f9d86">mobile 390 · host view</div>
+        <div style="width:390px;height:760px;border-radius:28px;overflow:hidden;background:#0b3d2e;position:relative;box-shadow:0 20px 60px rgba(0,0,0,.5);display:flex;flex-direction:column;box-sizing:border-box">
+          <div style="padding:22px 20px 14px;display:flex;flex-direction:column;gap:4px;border-bottom:1px solid rgba(255,255,255,.1)">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6f9d86">ROOM CODE</div>
+            <div style="display:flex;align-items:baseline;gap:10px">
+              <div style="font-family:'JetBrains Mono',monospace;font-size:32px;letter-spacing:.14em;color:#facc15;font-weight:600">7K2QX</div>
+              <span style="font-family:'Work Sans',sans-serif;font-size:12px;color:#9dc7b2">tap to copy ⧉</span>
+            </div>
+          </div>
+          <div style="padding:16px 20px;display:flex;flex-direction:column;gap:10px;flex:1;overflow:hidden">
+            <div style="font-family:'Alegreya',Georgia,serif;font-weight:700;font-size:15px;color:#f8f4e9">Players (3/4)</div>
+            <div style="display:flex;align-items:center;gap:10px;background:rgba(0,0,0,.2);border-radius:12px;padding:10px 12px">
+              <div style="width:32px;height:32px;border-radius:50%;background:#e11d48;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700">MA</div>
+              <div style="flex:1;font-size:14px;color:#f8f4e9;font-weight:600">Marco <span style="color:#facc15;font-size:10px">★ host</span> <span style="color:#fde68a;font-size:10px">(you)</span></div>
+              <span style="font-size:11px;color:#34d399;font-family:'JetBrains Mono',monospace">READY</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;background:rgba(0,0,0,.2);border-radius:12px;padding:10px 12px">
+              <div style="width:32px;height:32px;border-radius:50%;background:#0284c7;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700">LU</div>
+              <div style="flex:1;font-size:14px;color:#f8f4e9;font-weight:600">Luz</div>
+              <span style="font-size:11px;color:#34d399;font-family:'JetBrains Mono',monospace">READY</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;background:rgba(0,0,0,.2);border-radius:12px;padding:10px 12px">
+              <div style="width:32px;height:32px;border-radius:50%;background:#d97706;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700">JP</div>
+              <div style="flex:1;font-size:14px;color:#f8f4e9;font-weight:600">Jun</div>
+              <span style="font-size:11px;color:#6f9d86;font-family:'JetBrains Mono',monospace">not ready</span>
+            </div>
+            <div style="margin-top:8px;font-family:'Alegreya',Georgia,serif;font-weight:700;font-size:15px;color:#f8f4e9">Table settings</div>
+            <div style="background:rgba(0,0,0,.2);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:12px">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <span style="font-size:13px;color:#dff0e7">Deck mode</span>
+                <div style="display:flex;background:rgba(255,255,255,.08);border-radius:999px;padding:3px">
+                  <span style="padding:5px 10px;border-radius:999px;background:#facc15;color:#14261e;font-size:11px;font-weight:700">Random</span>
+                  <span style="padding:5px 10px;border-radius:999px;color:#9dc7b2;font-size:11px">Fixed</span>
+                </div>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <span style="font-size:13px;color:#dff0e7">Min doubts</span>
+                <div style="display:flex;align-items:center;gap:10px">
+                  <span style="width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;color:#f8f4e9;font-size:14px">–</span>
+                  <span style="font-family:'JetBrains Mono',monospace;color:#facc15;font-size:15px;font-weight:600">2</span>
+                  <span style="width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;color:#f8f4e9;font-size:14px">+</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div style="padding:16px 20px 24px;border-top:1px solid rgba(255,255,255,.1)">
+            <button style="width:100%;height:54px;border-radius:16px;border:none;background:linear-gradient(180deg,#fde68a,#facc15);color:#3b2801;font-weight:700;font-size:16px;font-family:'Work Sans',sans-serif">Deal 'em in</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- mobile guest -->
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#6f9d86">mobile 390 · guest view (settings read-only)</div>
+        <div style="width:390px;height:760px;border-radius:28px;overflow:hidden;background:#0b3d2e;position:relative;box-shadow:0 20px 60px rgba(0,0,0,.5);display:flex;flex-direction:column;box-sizing:border-box">
+          <div style="padding:22px 20px 14px;display:flex;flex-direction:column;gap:4px;border-bottom:1px solid rgba(255,255,255,.1)">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6f9d86">ROOM CODE</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:32px;letter-spacing:.14em;color:#facc15;font-weight:600">7K2QX</div>
+          </div>
+          <div style="padding:16px 20px;display:flex;flex-direction:column;gap:10px;flex:1">
+            <div style="font-family:'Alegreya',Georgia,serif;font-weight:700;font-size:15px;color:#f8f4e9">Players (3/4)</div>
+            <div style="display:flex;align-items:center;gap:10px;background:rgba(0,0,0,.2);border-radius:12px;padding:10px 12px">
+              <div style="width:32px;height:32px;border-radius:50%;background:#e11d48;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700">MA</div>
+              <div style="flex:1;font-size:14px;color:#f8f4e9;font-weight:600">Marco <span style="color:#facc15;font-size:10px">★ host</span></div>
+              <span style="font-size:11px;color:#34d399;font-family:'JetBrains Mono',monospace">READY</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;background:rgba(0,0,0,.2);border-radius:12px;padding:10px 12px">
+              <div style="width:32px;height:32px;border-radius:50%;background:#0284c7;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700">LU</div>
+              <div style="flex:1;font-size:14px;color:#f8f4e9;font-weight:600">Luz <span style="color:#fde68a;font-size:10px">(you)</span></div>
+              <span style="font-size:11px;color:#34d399;font-family:'JetBrains Mono',monospace">READY</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;background:rgba(0,0,0,.2);border-radius:12px;padding:10px 12px">
+              <div style="width:32px;height:32px;border-radius:50%;background:#d97706;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700">JP</div>
+              <div style="flex:1;font-size:14px;color:#f8f4e9;font-weight:600">Jun</div>
+              <span style="font-size:11px;color:#6f9d86;font-family:'JetBrains Mono',monospace">not ready</span>
+            </div>
+            <div style="margin-top:8px;font-family:'Alegreya',Georgia,serif;font-weight:700;font-size:15px;color:#f8f4e9">Table settings <span style="font-family:'JetBrains Mono',monospace;font-size:9px;color:#6f9d86;font-weight:400">— set by host</span></div>
+            <div style="background:rgba(0,0,0,.12);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:12px;opacity:.75">
+              <div style="display:flex;justify-content:space-between"><span style="font-size:13px;color:#9dc7b2">Deck mode</span><span style="font-size:13px;color:#dff0e7;font-weight:600">Random</span></div>
+              <div style="display:flex;justify-content:space-between"><span style="font-size:13px;color:#9dc7b2">Min doubts</span><span style="font-size:13px;color:#dff0e7;font-weight:600">2</span></div>
+            </div>
+          </div>
+          <div style="padding:16px 20px 24px;border-top:1px solid rgba(255,255,255,.1)">
+            <button style="width:100%;height:54px;border-radius:16px;border:2px solid #facc15;background:rgba(250,204,21,.12);color:#facc15;font-weight:700;font-size:16px;font-family:'Work Sans',sans-serif">I'm ready</button>
+            <div style="text-align:center;margin-top:10px;font-family:'JetBrains Mono',monospace;font-size:11px;color:#6f9d86">waiting on Jun…</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- mobile host disconnected -->
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#6f9d86">mobile 390 · host disconnected mid-lobby</div>
+        <div style="width:390px;height:760px;border-radius:28px;overflow:hidden;background:#0b3d2e;position:relative;box-shadow:0 20px 60px rgba(0,0,0,.5);display:flex;flex-direction:column;box-sizing:border-box">
+          <div style="padding:22px 20px 14px;border-bottom:1px solid rgba(255,255,255,.1)">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:32px;letter-spacing:.14em;color:#facc15;font-weight:600">7K2QX</div>
+          </div>
+          <div style="padding:16px 20px;display:flex;flex-direction:column;gap:10px;flex:1">
+            <div style="display:flex;align-items:center;gap:10px;background:rgba(0,0,0,.2);border-radius:12px;padding:10px 12px;opacity:.45">
+              <div style="width:32px;height:32px;border-radius:50%;background:#e11d48;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700;filter:grayscale(1)">MA</div>
+              <div style="flex:1;font-size:14px;color:#f8f4e9;font-weight:600">Marco <span style="color:#facc15;font-size:10px">★</span></div>
+              <span style="font-size:11px;color:#e5484d;font-family:'JetBrains Mono',monospace">offline</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;background:rgba(0,0,0,.2);border-radius:12px;padding:10px 12px">
+              <div style="width:32px;height:32px;border-radius:50%;background:#0284c7;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700">LU</div>
+              <div style="flex:1;font-size:14px;color:#f8f4e9;font-weight:600">Luz <span style="color:#facc15;font-size:10px">★ new host</span> <span style="color:#fde68a;font-size:10px">(you)</span></div>
+              <span style="font-size:11px;color:#34d399;font-family:'JetBrains Mono',monospace">READY</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;background:rgba(0,0,0,.2);border-radius:12px;padding:10px 12px">
+              <div style="width:32px;height:32px;border-radius:50%;background:#d97706;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700">JP</div>
+              <div style="flex:1;font-size:14px;color:#f8f4e9;font-weight:600">Jun</div>
+              <span style="font-size:11px;color:#6f9d86;font-family:'JetBrains Mono',monospace">not ready</span>
+            </div>
+            <div style="margin-top:12px;padding:12px 14px;border-radius:12px;background:rgba(229,72,77,.12);border:1px solid rgba(229,72,77,.3);font-family:'Work Sans',sans-serif;font-size:13px;color:#fca5a5">Marco left the table. Luz is holding the deck now — you're the host! 🎩</div>
+          </div>
+          <div style="padding:16px 20px 24px;border-top:1px solid rgba(255,255,255,.1)">
+            <button style="width:100%;height:54px;border-radius:16px;border:none;background:linear-gradient(180deg,#fde68a,#facc15);color:#3b2801;font-weight:700;font-size:16px;font-family:'Work Sans',sans-serif;opacity:.5">Deal 'em in</button>
+            <div style="text-align:center;margin-top:8px;font-family:'JetBrains Mono',monospace;font-size:10px;color:#6f9d86">need 2+ ready players</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- desktop host -->
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#6f9d86">desktop 1280 · host view</div>
+        <div style="width:920px;height:560px;border-radius:20px;overflow:hidden;background:#0b3d2e;position:relative;box-shadow:0 20px 60px rgba(0,0,0,.5);display:flex;box-sizing:border-box">
+          <div style="flex:1.3;padding:32px;display:flex;flex-direction:column;gap:16px;border-right:1px solid rgba(255,255,255,.1)">
+            <div>
+              <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6f9d86">ROOM CODE</div>
+              <div style="font-family:'JetBrains Mono',monospace;font-size:38px;letter-spacing:.14em;color:#facc15;font-weight:600">7K2QX</div>
+            </div>
+            <div style="font-family:'Alegreya',Georgia,serif;font-weight:700;font-size:17px;color:#f8f4e9">Players (3/4)</div>
+            <div style="display:flex;gap:12px;flex-wrap:wrap">
+              <div style="width:140px;background:rgba(0,0,0,.2);border-radius:14px;padding:14px;display:flex;flex-direction:column;align-items:center;gap:8px;border:1px solid rgba(250,204,21,.3)">
+                <div style="width:44px;height:44px;border-radius:50%;background:#e11d48;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700">MA</div>
+                <div style="font-size:13px;color:#f8f4e9;font-weight:600">Marco</div>
+                <div style="font-size:10px;color:#facc15">★ host · you</div>
+                <span style="font-size:10px;color:#34d399;font-family:'JetBrains Mono',monospace">READY</span>
+              </div>
+              <div style="width:140px;background:rgba(0,0,0,.2);border-radius:14px;padding:14px;display:flex;flex-direction:column;align-items:center;gap:8px">
+                <div style="width:44px;height:44px;border-radius:50%;background:#0284c7;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700">LU</div>
+                <div style="font-size:13px;color:#f8f4e9;font-weight:600">Luz</div>
+                <span style="font-size:10px;color:#34d399;font-family:'JetBrains Mono',monospace">READY</span>
+              </div>
+              <div style="width:140px;background:rgba(0,0,0,.2);border-radius:14px;padding:14px;display:flex;flex-direction:column;align-items:center;gap:8px">
+                <div style="width:44px;height:44px;border-radius:50%;background:#d97706;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700">JP</div>
+                <div style="font-size:13px;color:#f8f4e9;font-weight:600">Jun</div>
+                <span style="font-size:10px;color:#6f9d86;font-family:'JetBrains Mono',monospace">not ready</span>
+              </div>
+              <div style="width:140px;border-radius:14px;padding:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;border:2px dashed rgba(255,255,255,.15)">
+                <div style="font-size:22px;color:#4d7a63">+</div>
+                <div style="font-size:11px;color:#4d7a63;font-family:'JetBrains Mono',monospace">open seat</div>
+              </div>
+            </div>
+            <div style="margin-top:auto">
+              <button style="width:220px;height:54px;border-radius:16px;border:none;background:linear-gradient(180deg,#fde68a,#facc15);color:#3b2801;font-weight:700;font-size:16px;font-family:'Work Sans',sans-serif">Deal 'em in</button>
+            </div>
+          </div>
+          <div style="flex:1;padding:32px;display:flex;flex-direction:column;gap:16px">
+            <div style="font-family:'Alegreya',Georgia,serif;font-weight:700;font-size:17px;color:#f8f4e9">Table settings</div>
+            <div style="background:rgba(0,0,0,.2);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:16px">
+              <div>
+                <div style="font-size:12px;color:#9dc7b2;margin-bottom:8px">Deck mode</div>
+                <div style="display:flex;background:rgba(255,255,255,.08);border-radius:999px;padding:4px;width:fit-content">
+                  <span style="padding:8px 16px;border-radius:999px;background:#facc15;color:#14261e;font-size:12px;font-weight:700">Random N-card</span>
+                  <span style="padding:8px 16px;border-radius:999px;color:#9dc7b2;font-size:12px">Fixed 4/5-copy</span>
+                </div>
+              </div>
+              <div>
+                <div style="font-size:12px;color:#9dc7b2;margin-bottom:8px">Card count (random mode)</div>
+                <div style="height:6px;border-radius:999px;background:rgba(255,255,255,.1);position:relative"><div style="position:absolute;left:0;top:0;height:6px;width:44%;border-radius:999px;background:#facc15"></div><div style="position:absolute;left:44%;top:-5px;width:16px;height:16px;border-radius:50%;background:#facc15;box-shadow:0 0 0 1px rgba(250,204,21,.5)"></div></div>
+                <div style="display:flex;justify-content:space-between;margin-top:6px;font-family:'JetBrains Mono',monospace;font-size:10px;color:#6f9d86"><span>30 min</span><span style="color:#facc15">36 cards</span><span>75 max</span></div>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <span style="font-size:13px;color:#dff0e7">Min doubts to win</span>
+                <div style="display:flex;align-items:center;gap:10px">
+                  <span style="width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;color:#f8f4e9;font-size:15px">–</span>
+                  <span style="font-family:'JetBrains Mono',monospace;color:#facc15;font-size:16px;font-weight:600;width:20px;text-align:center">2</span>
+                  <span style="width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;color:#f8f4e9;font-size:15px">+</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#9dc7b2;line-height:1.7;max-width:820px">
+      <b style="color:#facc15">anim:</b> ready toggle pops (<b style="color:#f8f4e9">animate-pop-in</b>) and the row border eases to emerald. Host-disconnect banner slides up (<b style="color:#f8f4e9">animate-slide-up</b>) and stays pinned until dismissed by the next room_update. Read-only settings drop opacity to 75% and lose interactive borders — no lock icon needed, the dimming reads as "not yours."
+    </div>
+  </div>
+
+  <!-- GAME TABLE -->
+  <div style="max-width:1280px;margin:0 auto 110px;display:flex;flex-direction:column;gap:34px">
+    <div style="display:flex;align-items:center;gap:18px">
+      <h2 style="font-family:'Alegreya',Georgia,serif;font-weight:700;font-size:34px;margin:0;color:#f8f4e9">3 · Game Table</h2>
+      <div style="height:1px;flex:1;background:rgba(255,255,255,.12)"></div>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6f9d86">your turn · doubt window · quota-blocked · pile burned toast</span>
+    </div>
+
+    <div style="display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start">
+      <!-- mobile: your turn, declaring -->
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#6f9d86">mobile 390 · your turn, starting a round</div>
+        <div style="width:390px;height:800px;border-radius:28px;overflow:hidden;position:relative;box-shadow:0 20px 60px rgba(0,0,0,.5);background:radial-gradient(ellipse at 50% 40%,#155a3f,#0b3d2e 60%,#062219 100%);display:flex;flex-direction:column;box-sizing:border-box">
+          <div style="position:absolute;inset:0;background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.02) 0px,rgba(255,255,255,.02) 3px,transparent 3px,transparent 9px)"></div>
+          <div style="position:relative;padding:14px 16px;display:flex;justify-content:space-between;align-items:center">
+            <div style="display:flex;gap:6px">
+              <div style="display:flex;align-items:center;gap:5px;background:rgba(0,0,0,.3);border-radius:999px;padding:4px 9px 4px 4px"><div style="width:20px;height:20px;border-radius:50%;background:#e11d48;font-size:9px;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700">MA</div><span style="font-size:10px;color:#f8f4e9">9</span></div>
+              <div style="display:flex;align-items:center;gap:5px;background:rgba(0,0,0,.3);border-radius:999px;padding:4px 9px 4px 4px;opacity:.45"><div style="width:20px;height:20px;border-radius:50%;background:#d97706;font-size:9px;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;filter:grayscale(1)">JP</div><span style="font-size:10px;color:#f8f4e9">6</span></div>
+            </div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#9dc7b2">min-doubts <span style="color:#facc15">2</span></div>
+          </div>
+          <div style="position:relative;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px">
+            <div style="width:64px;height:64px;border-radius:50%;border:2px dashed rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:9px;color:#4d7a63">empty</div>
+            <div style="font-family:'Alegreya',Georgia,serif;font-style:italic;font-size:16px;color:#f8f4e9;text-align:center">Your move — kick off a round</div>
+          </div>
+          <div style="position:relative;padding:12px 16px 8px;display:flex;flex-direction:column;gap:10px">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#9dc7b2;letter-spacing:.08em">DECLARE VALUE</div>
+            <div style="display:flex;gap:5px;flex-wrap:wrap">
+              <div style="width:29px;height:29px;border-radius:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:12px;color:#dff0e7;font-family:'JetBrains Mono',monospace">0</div>
+              <div style="width:29px;height:29px;border-radius:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:12px;color:#dff0e7;font-family:'JetBrains Mono',monospace">1</div>
+              <div style="width:29px;height:29px;border-radius:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:12px;color:#dff0e7;font-family:'JetBrains Mono',monospace">2</div>
+              <div style="width:29px;height:29px;border-radius:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:12px;color:#dff0e7;font-family:'JetBrains Mono',monospace">3</div>
+              <div style="width:29px;height:29px;border-radius:8px;background:#facc15;border:1px solid #facc15;display:flex;align-items:center;justify-content:center;font-size:12px;color:#14261e;font-weight:700;font-family:'JetBrains Mono',monospace;transform:scale(1.12)">4</div>
+              <div style="width:29px;height:29px;border-radius:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:12px;color:#dff0e7;font-family:'JetBrains Mono',monospace">5</div>
+              <div style="width:29px;height:29px;border-radius:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:12px;color:#dff0e7;font-family:'JetBrains Mono',monospace">6</div>
+              <div style="width:29px;height:29px;border-radius:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:12px;color:#dff0e7;font-family:'JetBrains Mono',monospace">7</div>
+              <div style="width:29px;height:29px;border-radius:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:12px;color:#dff0e7;font-family:'JetBrains Mono',monospace">8</div>
+              <div style="width:29px;height:29px;border-radius:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:12px;color:#dff0e7;font-family:'JetBrains Mono',monospace">9</div>
+              <div style="width:29px;height:29px;border-radius:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:12px;color:#dff0e7;font-family:'JetBrains Mono',monospace">10</div>
+            </div>
+          </div>
+          <div style="position:relative;padding:10px 16px 18px;display:flex;flex-direction:column;gap:10px;background:linear-gradient(180deg,transparent,rgba(0,0,0,.35))">
+            <div style="display:flex;gap:8px;justify-content:center">
+              <div style="width:52px;height:76px;border-radius:10px;border:2px solid #cbd5c9;background:#f8f4e9;display:flex;align-items:center;justify-content:center;font-family:'Alegreya',Georgia,serif;font-weight:800;font-size:24px;color:#14261e">4</div>
+              <div style="width:52px;height:82px;border-radius:10px;border:2px solid #facc15;background:#f8f4e9;display:flex;align-items:center;justify-content:center;font-family:'Alegreya',Georgia,serif;font-weight:800;font-size:24px;color:#14261e;transform:translateY(-8px);box-shadow:0 0 0 1px rgba(250,204,21,.5),0 8px 28px rgba(250,204,21,.22)">4</div>
+              <div style="width:52px;height:76px;border-radius:10px;border:2px solid #cbd5c9;background:#f8f4e9;display:flex;align-items:center;justify-content:center;font-family:'Alegreya',Georgia,serif;font-weight:800;font-size:24px;color:#14261e">9</div>
+              <div style="width:52px;height:76px;border-radius:10px;border:2px solid #cbd5c9;background:#f8f4e9;display:flex;align-items:center;justify-content:center;font-family:'Alegreya',Georgia,serif;font-weight:800;font-size:24px;color:#14261e">2</div>
+            </div>
+            <button style="height:52px;border-radius:14px;border:none;background:linear-gradient(180deg,#fde68a,#facc15);color:#3b2801;font-weight:700;font-size:16px;font-family:'Work Sans',sans-serif;box-shadow:0 6px 16px rgba(0,0,0,.35)">Play 2 as 4s</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- mobile: doubt window -->
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#6f9d86">mobile 390 · doubt window open (3s left)</div>
+        <div style="width:390px;height:800px;border-radius:28px;overflow:hidden;position:relative;box-shadow:0 20px 60px rgba(0,0,0,.5);background:radial-gradient(ellipse at 50% 40%,#155a3f,#0b3d2e 60%,#062219 100%);display:flex;flex-direction:column;box-sizing:border-box">
+          <div style="position:relative;padding:14px 16px;display:flex;justify-content:space-between;align-items:center">
+            <div style="display:flex;align-items:center;gap:6px;background:rgba(0,0,0,.3);border-radius:999px;padding:4px 10px 4px 4px;border:2px solid #facc15;box-shadow:0 0 0 0 rgba(250,204,21,.55);animation:pulseRing 1.6s ease-out infinite"><div style="width:22px;height:22px;border-radius:50%;background:#0284c7;font-size:10px;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700">LU</div><span style="font-size:11px;color:#f8f4e9;font-weight:600">Luz just played</span></div>
+          </div>
+          <div style="position:relative;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px">
+            <div style="position:relative;width:96px;height:96px">
+              <div style="position:absolute;top:6px;left:8px;width:64px;height:88px;border-radius:10px;border:2px solid rgba(255,255,255,.15);background:linear-gradient(135deg,#155a3f,#062219);transform:rotate(-5deg)"></div>
+              <div style="position:absolute;top:0;left:14px;width:64px;height:88px;border-radius:10px;border:2px solid rgba(255,255,255,.22);background:linear-gradient(135deg,#155a3f,#062219);box-shadow:0 8px 20px rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:16px;color:#facc15;font-weight:600">3</div>
+            </div>
+            <div style="font-family:'Alegreya',Georgia,serif;font-style:italic;font-weight:600;font-size:20px;color:#f8f4e9">Claiming: <span style="color:#facc15">4s</span></div>
+            <div style="position:relative;width:112px;height:112px">
+              <svg width="112" height="112" style="position:absolute;inset:0;transform:rotate(-90deg)">
+                <circle cx="56" cy="56" r="48" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="7"></circle>
+                <circle cx="56" cy="56" r="48" fill="none" stroke="#e5484d" stroke-width="7" stroke-linecap="round" stroke-dasharray="302" stroke-dashoffset="120"></circle>
+              </svg>
+              <div style="position:absolute;inset:7px;border-radius:50%;background:#7f1d1d;border:2px solid #e5484d;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff">
+                <div style="font-family:'Alegreya',Georgia,serif;font-weight:800;font-size:20px">DOUBT</div>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:17px;font-weight:600">3s</div>
+              </div>
+            </div>
+          </div>
+          <div style="position:relative;padding:16px 20px 24px;display:flex;flex-direction:column;gap:8px;background:linear-gradient(180deg,transparent,rgba(0,0,0,.35))">
+            <div style="text-align:center;font-family:'Work Sans',sans-serif;font-size:12px;color:#9dc7b2">or trust her and let it ride —</div>
+            <button style="height:46px;border-radius:14px;border:1px solid rgba(255,255,255,.2);background:transparent;color:#9dc7b2;font-weight:600;font-size:14px;font-family:'Work Sans',sans-serif">Let it ride</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- mobile: quota blocked -->
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#6f9d86">mobile 390 · quota-blocked last play</div>
+        <div style="width:390px;height:800px;border-radius:28px;overflow:hidden;position:relative;box-shadow:0 20px 60px rgba(0,0,0,.5);background:radial-gradient(ellipse at 50% 40%,#155a3f,#0b3d2e 60%,#062219 100%);display:flex;flex-direction:column;box-sizing:border-box">
+          <div style="position:relative;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px">
+            <div style="position:relative;width:80px;height:80px">
+              <div style="position:absolute;top:0;left:12px;width:56px;height:80px;border-radius:10px;border:2px solid rgba(255,255,255,.22);background:linear-gradient(135deg,#155a3f,#062219);box-shadow:0 8px 20px rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:14px;color:#facc15;font-weight:600">6</div>
+            </div>
+            <div style="font-family:'Alegreya',Georgia,serif;font-style:italic;font-weight:600;font-size:18px;color:#f8f4e9">Claiming: <span style="color:#facc15">9s</span></div>
+          </div>
+          <div style="position:relative;padding:12px 16px 8px;display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;gap:8px;justify-content:center;opacity:.9">
+              <div style="width:52px;height:76px;border-radius:10px;border:2px solid #facc15;background:#f8f4e9;display:flex;align-items:center;justify-content:center;font-family:'Alegreya',Georgia,serif;font-weight:800;font-size:24px;color:#14261e;transform:translateY(-6px)">9</div>
+            </div>
+            <div style="border-radius:12px;background:rgba(229,72,77,.14);border:1px solid rgba(229,72,77,.35);padding:10px 12px;display:flex;gap:8px;align-items:flex-start">
+              <span style="font-size:15px">✋</span>
+              <span style="font-family:'Work Sans',sans-serif;font-size:12.5px;color:#fca5a5;line-height:1.4">You need 1 more doubt before you can play your last card.</span>
+            </div>
+          </div>
+          <div style="position:relative;padding:8px 16px 24px;display:flex;gap:10px;background:linear-gradient(180deg,transparent,rgba(0,0,0,.35))">
+            <button style="flex:1;height:52px;border-radius:14px;border:none;background:#6b7280;color:#e5e7eb;font-weight:700;font-size:15px;font-family:'Work Sans',sans-serif;opacity:.5">Play last card</button>
+            <button style="flex:1;height:52px;border-radius:14px;border:1px solid rgba(250,204,21,.5);background:transparent;color:#facc15;font-weight:700;font-size:15px;font-family:'Work Sans',sans-serif">Pass</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- mobile: pile burned + disconnect toasts -->
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#6f9d86">mobile 390 · toasts: pile burned, disconnect grace</div>
+        <div style="width:390px;height:800px;border-radius:28px;overflow:hidden;position:relative;box-shadow:0 20px 60px rgba(0,0,0,.5);background:radial-gradient(ellipse at 50% 40%,#155a3f,#0b3d2e 60%,#062219 100%);display:flex;flex-direction:column;box-sizing:border-box">
+          <div style="position:relative;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px">
+            <div style="width:64px;height:64px;border-radius:50%;border:2px dashed rgba(255,255,255,.2)"></div>
+          </div>
+          <div style="position:absolute;bottom:150px;left:16px;right:16px;display:flex;flex-direction:column;gap:10px">
+            <div style="background:rgba(20,15,5,.92);border:1px solid rgba(250,204,21,.4);border-radius:14px;padding:12px 14px;display:flex;gap:10px;align-items:center;box-shadow:0 8px 24px rgba(0,0,0,.4);animation:slideUp .25s ease-out">
+              <span style="font-size:18px">🔥</span>
+              <div><div style="font-family:'Work Sans',sans-serif;font-size:13px;color:#f8f4e9;font-weight:600">Pile's burned!</div><div style="font-family:'Work Sans',sans-serif;font-size:11.5px;color:#9dc7b2">Nobody called it — Marco starts fresh.</div></div>
+            </div>
+            <div style="background:rgba(20,15,5,.92);border:1px solid rgba(229,72,77,.3);border-radius:14px;padding:12px 14px;display:flex;gap:10px;align-items:center;box-shadow:0 8px 24px rgba(0,0,0,.4);animation:slideUp .25s ease-out .1s both">
+              <span style="font-size:18px">📡</span>
+              <div><div style="font-family:'Work Sans',sans-serif;font-size:13px;color:#f8f4e9;font-weight:600">Jun dropped</div><div style="font-family:'Work Sans',sans-serif;font-size:11.5px;color:#9dc7b2">Holding their seat for 23s…</div></div>
+            </div>
+          </div>
+          <div style="position:relative;padding:16px 20px 24px;background:linear-gradient(180deg,transparent,rgba(0,0,0,.35))">
+            <div style="display:flex;gap:8px;justify-content:center"><div style="width:52px;height:76px;border-radius:10px;border:2px solid #cbd5c9;background:#f8f4e9"></div><div style="width:52px;height:76px;border-radius:10px;border:2px solid #cbd5c9;background:#f8f4e9"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- desktop: true felt table -->
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#6f9d86">desktop 1280 · doubt window open, 3-player table</div>
+        <div style="width:1160px;height:760px;border-radius:20px;overflow:hidden;position:relative;box-shadow:0 20px 60px rgba(0,0,0,.5);background:radial-gradient(ellipse 70% 60% at 50% 42%,#1e7a55,#0b3d2e 55%,#062219 100%);box-sizing:border-box">
+          <div style="position:absolute;inset:0;background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.02) 0px,rgba(255,255,255,.02) 3px,transparent 3px,transparent 9px)"></div>
+          <div style="position:absolute;inset:26px;border-radius:50%/38%;border:6px solid #3b2519;box-shadow:inset 0 0 60px rgba(0,0,0,.5)"></div>
+
+          <!-- top opponent -->
+          <div style="position:absolute;top:56px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:6px">
+            <div style="display:flex;gap:-8px">
+              <div style="width:34px;height:48px;border-radius:6px;border:2px solid rgba(255,255,255,.15);background:linear-gradient(135deg,#155a3f,#062219);margin-right:-16px;transform:rotate(-6deg)"></div>
+              <div style="width:34px;height:48px;border-radius:6px;border:2px solid rgba(255,255,255,.15);background:linear-gradient(135deg,#155a3f,#062219);margin-right:-16px"></div>
+              <div style="width:34px;height:48px;border-radius:6px;border:2px solid rgba(255,255,255,.15);background:linear-gradient(135deg,#155a3f,#062219);transform:rotate(6deg)"></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.3);border-radius:999px;padding:6px 14px 6px 6px;border:2px solid #facc15;box-shadow:0 0 0 0 rgba(250,204,21,.55);animation:pulseRing 1.6s ease-out infinite">
+              <div style="width:30px;height:30px;border-radius:50%;background:#0284c7;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700">LU</div>
+              <div style="text-align:left"><div style="font-size:13px;color:#f8f4e9;font-weight:600">Luz</div><div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#9dc7b2">🂠 6 · doubts 1/2</div></div>
+            </div>
+          </div>
+
+          <!-- left opponent -->
+          <div style="position:absolute;top:50%;left:56px;transform:translateY(-50%);display:flex;flex-direction:column;align-items:center;gap:6px">
+            <div style="display:flex;gap:-8px">
+              <div style="width:32px;height:46px;border-radius:6px;border:2px solid rgba(255,255,255,.1);background:linear-gradient(135deg,#155a3f,#062219);margin-right:-16px;opacity:.5"></div>
+              <div style="width:32px;height:46px;border-radius:6px;border:2px solid rgba(255,255,255,.1);background:linear-gradient(135deg,#155a3f,#062219);opacity:.5"></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.3);border-radius:999px;padding:6px 14px 6px 6px;opacity:.55">
+              <div style="width:30px;height:30px;border-radius:50%;background:#d97706;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700;filter:grayscale(1)">JP</div>
+              <div style="text-align:left"><div style="font-size:13px;color:#f8f4e9;font-weight:600">Jun</div><div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#e5484d">reconnecting…</div></div>
+            </div>
+          </div>
+
+          <!-- center pile + declared -->
+          <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-58%);display:flex;flex-direction:column;align-items:center;gap:14px">
+            <div style="font-family:'Alegreya',Georgia,serif;font-style:italic;font-weight:700;font-size:24px;color:#f8f4e9;background:rgba(0,0,0,.25);border:1px solid rgba(250,204,21,.4);border-radius:999px;padding:8px 22px">Claiming: <span style="color:#facc15">4s</span></div>
+            <div style="position:relative;width:120px;height:120px">
+              <div style="position:absolute;top:10px;left:14px;width:76px;height:104px;border-radius:12px;border:2px solid rgba(255,255,255,.15);background:linear-gradient(135deg,#155a3f,#062219);transform:rotate(-6deg)"></div>
+              <div style="position:absolute;top:4px;left:22px;width:76px;height:104px;border-radius:12px;border:2px solid rgba(255,255,255,.2);background:linear-gradient(135deg,#155a3f,#062219);transform:rotate(4deg)"></div>
+              <div style="position:absolute;top:0;left:18px;width:76px;height:104px;border-radius:12px;border:2px solid rgba(255,255,255,.25);background:linear-gradient(135deg,#155a3f,#062219);box-shadow:0 10px 26px rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:20px;color:#facc15;font-weight:600">6</div>
+            </div>
+            <div style="position:relative;width:104px;height:104px;margin-top:6px">
+              <svg width="104" height="104" style="position:absolute;inset:0;transform:rotate(-90deg)">
+                <circle cx="52" cy="52" r="45" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="6"></circle>
+                <circle cx="52" cy="52" r="45" fill="none" stroke="#e5484d" stroke-width="6" stroke-linecap="round" stroke-dasharray="283" stroke-dashoffset="113"></circle>
+              </svg>
+              <div style="position:absolute;inset:6px;border-radius:50%;background:#7f1d1d;border:2px solid #e5484d;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff">
+                <div style="font-family:'Alegreya',Georgia,serif;font-weight:800;font-size:16px">DOUBT</div>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:600">3s</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- self hand + controls -->
+          <div style="position:absolute;bottom:22px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:12px">
+            <div style="display:flex;gap:6px;padding:0 8px">
+              <div style="width:62px;height:90px;border-radius:10px;border:2px solid #cbd5c9;background:#f8f4e9;display:flex;align-items:center;justify-content:center;font-family:'Alegreya',Georgia,serif;font-weight:800;font-size:28px;color:#14261e">1</div>
+              <div style="width:62px;height:90px;border-radius:10px;border:2px solid #cbd5c9;background:#f8f4e9;display:flex;align-items:center;justify-content:center;font-family:'Alegreya',Georgia,serif;font-weight:800;font-size:28px;color:#14261e">4</div>
+              <div style="width:62px;height:90px;border-radius:10px;border:2px solid #cbd5c9;background:#f8f4e9;display:flex;align-items:center;justify-content:center;font-family:'Alegreya',Georgia,serif;font-weight:800;font-size:28px;color:#14261e">8</div>
+              <div style="width:62px;height:90px;border-radius:10px;border:2px solid #cbd5c9;background:#f8f4e9;display:flex;align-items:center;justify-content:center;font-family:'Alegreya',Georgia,serif;font-weight:800;font-size:28px;color:#14261e">0</div>
+              <div style="width:62px;height:90px;border-radius:10px;border:2px solid #cbd5c9;background:#f8f4e9;display:flex;align-items:center;justify-content:center;font-family:'Alegreya',Georgia,serif;font-weight:800;font-size:28px;color:#14261e">9</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;background:rgba(0,0,0,.3);border-radius:999px;padding:6px 16px 6px 6px">
+              <div style="width:30px;height:30px;border-radius:50%;background:#e11d48;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700">MA</div>
+              <div style="text-align:left"><div style="font-size:13px;color:#f8f4e9;font-weight:600">Marco (you)</div><div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#9dc7b2">🂠 5 · doubts 2/2 ✓</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#9dc7b2;line-height:1.7;max-width:820px">
+      <b style="color:#facc15">anim:</b> played cards fly from hand to pile with a brief <b style="color:#f8f4e9">flip-in</b>; the pile badge bumps with <b style="color:#f8f4e9">animate-[tick_.25s]</b> each time a card lands. Doubt ring is urgent (red, ticking) but the button itself never shakes — panic without chaos. Toasts stack bottom-up, oldest expires first, each <b style="color:#f8f4e9">animate-slide-up</b> in, fade+collapse out. Quota-blocked message and disabled Play button both key off the same selection-count check client-side, mirroring the server's rejection so it never surprises the player.
+    </div>
+  </div>
+
+
+  <!-- REVEAL MODAL -->
+  <div style="max-width:1280px;margin:0 auto 110px;display:flex;flex-direction:column;gap:34px">
+    <div style="display:flex;align-items:center;gap:18px">
+      <h2 style="font-family:'Alegreya',Georgia,serif;font-weight:700;font-size:34px;margin:0;color:#f8f4e9">4 · Reveal Modal</h2>
+      <div style="height:1px;flex:1;background:rgba(255,255,255,.12)"></div>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6f9d86">the showdown · lie caught · truth called wrongly</span>
+    </div>
+    <div style="display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#6f9d86">desktop 1280 · lie caught</div>
+        <div style="width:560px;height:620px;border-radius:20px;overflow:hidden;position:relative;box-shadow:0 20px 60px rgba(0,0,0,.6);background:radial-gradient(ellipse at 50% 35%,#155a3f,#062219 100%)">
+          <div style="position:absolute;inset:0;background:rgba(2,10,7,.55)"></div>
+          <div style="position:relative;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:32px;box-sizing:border-box">
+            <div style="font-family:'Alegreya',Georgia,serif;font-style:italic;font-size:15px;color:#9dc7b2">Luz claimed <span style="color:#facc15;font-weight:600">4s</span> · Marco doubted</div>
+            <div style="display:flex;gap:14px">
+              <div style="width:80px;height:114px;border-radius:12px;border:2px solid #e5484d;background:#f8f4e9;display:flex;align-items:center;justify-content:center;font-family:'Alegreya',Georgia,serif;font-weight:800;font-size:36px;color:#14261e;box-shadow:0 12px 30px rgba(0,0,0,.5);animation:flipIn .4s ease-out">4</div>
+              <div style="width:80px;height:114px;border-radius:12px;border:2px solid #e5484d;background:#f8f4e9;display:flex;align-items:center;justify-content:center;font-family:'Alegreya',Georgia,serif;font-weight:800;font-size:36px;color:#14261e;box-shadow:0 12px 30px rgba(0,0,0,.5);animation:flipIn .5s ease-out">7</div>
+            </div>
+            <div style="font-family:'Alegreya',Georgia,serif;font-weight:800;font-size:52px;color:#e5484d;letter-spacing:.04em;transform:rotate(-4deg);text-shadow:0 6px 20px rgba(229,72,77,.4);animation:stampIn .5s cubic-bezier(.2,1.6,.4,1)">LIAR!</div>
+            <div style="font-family:'Work Sans',sans-serif;font-size:14px;color:#f8f4e9;text-align:center;line-height:1.5">One of those wasn't a 4. <b>Luz</b> scoops up all 11 cards.</div>
+            <button style="height:48px;padding:0 28px;border-radius:14px;border:none;background:linear-gradient(180deg,#fde68a,#facc15);color:#3b2801;font-weight:700;font-size:15px;font-family:'Work Sans',sans-serif">Next round</button>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#6f9d86">desktop 1280 · truth called wrongly</div>
+        <div style="width:560px;height:620px;border-radius:20px;overflow:hidden;position:relative;box-shadow:0 20px 60px rgba(0,0,0,.6);background:radial-gradient(ellipse at 50% 35%,#155a3f,#062219 100%)">
+          <div style="position:absolute;inset:0;background:rgba(2,10,7,.55)"></div>
+          <div style="position:relative;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:32px;box-sizing:border-box">
+            <div style="font-family:'Alegreya',Georgia,serif;font-style:italic;font-size:15px;color:#9dc7b2">Jun claimed <span style="color:#facc15;font-weight:600">9s</span> · Marco doubted</div>
+            <div style="display:flex;gap:14px">
+              <div style="width:80px;height:114px;border-radius:12px;border:2px solid #34d399;background:#f8f4e9;display:flex;align-items:center;justify-content:center;font-family:'Alegreya',Georgia,serif;font-weight:800;font-size:36px;color:#14261e;box-shadow:0 12px 30px rgba(0,0,0,.5);animation:flipIn .4s ease-out">9</div>
+              <div style="width:80px;height:114px;border-radius:12px;border:2px solid #34d399;background:#f8f4e9;display:flex;align-items:center;justify-content:center;font-family:'Alegreya',Georgia,serif;font-weight:800;font-size:36px;color:#14261e;box-shadow:0 12px 30px rgba(0,0,0,.5);animation:flipIn .5s ease-out">9</div>
+            </div>
+            <div style="font-family:'Alegreya',Georgia,serif;font-weight:800;font-size:44px;color:#34d399;letter-spacing:.02em;transform:rotate(-4deg);text-shadow:0 6px 20px rgba(52,211,153,.35);animation:stampIn .5s cubic-bezier(.2,1.6,.4,1)">HONEST!</div>
+            <div style="font-family:'Work Sans',sans-serif;font-size:14px;color:#f8f4e9;text-align:center;line-height:1.5">Those were really 9s. <b>Marco</b> doubted a straight shooter — he takes the pile.</div>
+            <button style="height:48px;padding:0 28px;border-radius:14px;border:none;background:linear-gradient(180deg,#fde68a,#facc15);color:#3b2801;font-weight:700;font-size:15px;font-family:'Work Sans',sans-serif">Next round</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#9dc7b2;line-height:1.7;max-width:820px">
+      <b style="color:#facc15">anim:</b> modal backdrop fades in fast (150ms), cards flip in staggered (80ms apart) with the winning/losing card's border already colored so the flip itself delivers the verdict. The verdict stamp lands ~250ms after the last card, oversized and slightly rotated — a rubber-stamp <b style="color:#f8f4e9">animate-[stampIn_.5s]</b> (scale 2.4→1, ease past 1). Red = lie, emerald = truth, everywhere in this modal — no other colors compete for attention here.
+    </div>
+  </div>
+
+  <!-- GAME OVER -->
+  <div style="max-width:1280px;margin:0 auto 40px;display:flex;flex-direction:column;gap:34px">
+    <div style="display:flex;align-items:center;gap:18px">
+      <h2 style="font-family:'Alegreya',Georgia,serif;font-weight:700;font-size:34px;margin:0;color:#f8f4e9">5 · Game Over</h2>
+      <div style="height:1px;flex:1;background:rgba(255,255,255,.12)"></div>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6f9d86">won on quota · won by forfeit</span>
+    </div>
+    <div style="display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#6f9d86">desktop 1280 · emptied hand + quota met</div>
+        <div style="width:560px;height:560px;border-radius:20px;overflow:hidden;position:relative;box-shadow:0 20px 60px rgba(0,0,0,.6);background:radial-gradient(ellipse at 50% 30%,#1e7a55,#062219 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px">
+          <div style="font-size:15px;letter-spacing:.3em;font-family:'JetBrains Mono',monospace;color:#facc15">★ ★ ★</div>
+          <div style="font-family:'Alegreya',Georgia,serif;font-weight:800;font-size:44px;color:#f8f4e9;animation:popIn .35s ease-out">Luz wins the table!</div>
+          <div style="font-family:'Alegreya',Georgia,serif;font-style:italic;font-size:16px;color:#9dc7b2">Hand empty, quota met — clean sweep.</div>
+          <div style="width:64px;height:64px;border-radius:50%;background:#0284c7;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:20px;margin-top:6px;box-shadow:0 0 0 4px rgba(250,204,21,.3)">LU</div>
+          <div style="display:flex;gap:10px;margin-top:12px">
+            <button style="height:48px;padding:0 24px;border-radius:14px;border:none;background:linear-gradient(180deg,#fde68a,#facc15);color:#3b2801;font-weight:700;font-size:15px;font-family:'Work Sans',sans-serif">Rematch</button>
+            <button style="height:48px;padding:0 24px;border-radius:14px;border:1px solid rgba(255,255,255,.25);background:transparent;color:#dff0e7;font-weight:600;font-size:15px;font-family:'Work Sans',sans-serif">Leave table</button>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#6f9d86">desktop 1280 · won by forfeit</div>
+        <div style="width:560px;height:560px;border-radius:20px;overflow:hidden;position:relative;box-shadow:0 20px 60px rgba(0,0,0,.6);background:radial-gradient(ellipse at 50% 30%,#1e7a55,#062219 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px">
+          <div style="font-family:'Alegreya',Georgia,serif;font-weight:800;font-size:44px;color:#f8f4e9;animation:popIn .35s ease-out">Marco wins by forfeit</div>
+          <div style="font-family:'Alegreya',Georgia,serif;font-style:italic;font-size:16px;color:#9dc7b2;text-align:center;max-width:380px">Everyone else wandered off. Last one at the table takes it — quota waived.</div>
+          <div style="width:64px;height:64px;border-radius:50%;background:#e11d48;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:20px;margin-top:6px;box-shadow:0 0 0 4px rgba(250,204,21,.3)">MA</div>
+          <div style="display:flex;gap:10px;margin-top:12px">
+            <button style="height:48px;padding:0 24px;border-radius:14px;border:none;background:linear-gradient(180deg,#fde68a,#facc15);color:#3b2801;font-weight:700;font-size:15px;font-family:'Work Sans',sans-serif">Rematch</button>
+            <button style="height:48px;padding:0 24px;border-radius:14px;border:1px solid rgba(255,255,255,.25);background:transparent;color:#dff0e7;font-weight:600;font-size:15px;font-family:'Work Sans',sans-serif">Leave table</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#9dc7b2;line-height:1.7;max-width:820px">
+      <b style="color:#facc15">anim:</b> winner name <b style="color:#f8f4e9">animate-pop-in</b>, avatar gets a soft gold halo (no confetti library — a few small gold circles could fall via staggered <b style="color:#f8f4e9">animate-[riseFade]</b> reversed, kept sparse). Forfeit variant intentionally quieter in copy (no "★★★"), still celebratory in structure so it doesn't feel like a consolation prize.
+    </div>
+  </div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

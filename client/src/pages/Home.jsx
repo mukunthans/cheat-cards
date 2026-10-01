@@ -1,136 +1,184 @@
 import { useState } from "react";
 import socket from "../socket.js";
+import Card from "../components/Card.jsx";
+import { NAME_KEY } from "../session.js";
 
-const NAME_KEY = "cheatcards_name";
+/** Full-screen "shuffling up a table" state — a spinning card back, never a spinner icon. */
+function Shuffling({ label }) {
+  return (
+    <div className="min-h-screen bg-felt-table flex flex-col items-center justify-center gap-8 p-4">
+      <div className="animate-slow-spin">
+        <Card faceDown size="lg" />
+      </div>
+      <div className="text-center">
+        <p className="font-display italic text-2xl text-ivory animate-breathe">{label}</p>
+        <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-felt-fog/60 mt-3">
+          dealing your room code
+        </p>
+      </div>
+    </div>
+  );
+}
 
 export default function Home({ onJoined }) {
-  const [mode, setMode] = useState("create"); // "create" | "join"
   const [name, setName] = useState(() => localStorage.getItem(NAME_KEY) || "");
   const [roomCode, setRoomCode] = useState("");
   const [error, setError] = useState("");
-  const [busy, setBusy] = useState(false);
+  const [errorField, setErrorField] = useState(null); // "name" | "code"
+  const [busy, setBusy] = useState(null); // "create" | "join"
+  const [shakeKey, setShakeKey] = useState(0);
 
-  function submit(e) {
-    e.preventDefault();
-    const trimmedName = name.trim();
-    if (!trimmedName) {
-      setError("Enter your name first.");
-      return;
-    }
-    setError("");
-    setBusy(true);
-    localStorage.setItem(NAME_KEY, trimmedName);
-
-    if (!socket.connected) socket.connect();
-
-    if (mode === "create") {
-      socket.emit("create_room", { player_name: trimmedName }, (ack) => {
-        setBusy(false);
-        if (ack?.error) {
-          setError(ack.error.message || "Could not create room.");
-          return;
-        }
-        onJoined({
-          roomCode: ack.room_code,
-          playerId: ack.player_id,
-          sessionToken: ack.session_token,
-          playerName: trimmedName,
-        });
-      });
-    } else {
-      const code = roomCode.trim().toUpperCase();
-      if (code.length !== 5) {
-        setBusy(false);
-        setError("Room codes are 5 characters.");
-        return;
-      }
-      socket.emit("join_room", { room_code: code, player_name: trimmedName }, (ack) => {
-        setBusy(false);
-        if (ack?.error) {
-          setError(ack.error.message || "Could not join room.");
-          return;
-        }
-        onJoined({
-          roomCode: code,
-          playerId: ack.player_id,
-          sessionToken: ack.session_token,
-          playerName: trimmedName,
-        });
-      });
-    }
+  function fail(message, field) {
+    setError(message);
+    setErrorField(field);
+    setShakeKey((k) => k + 1);
+    setBusy(null);
   }
 
+  function requireName() {
+    const trimmed = name.trim();
+    if (!trimmed) {
+      fail("Enter your name first.", "name");
+      return null;
+    }
+    localStorage.setItem(NAME_KEY, trimmed);
+    return trimmed;
+  }
+
+  function enter(ack, code, playerName) {
+    onJoined({
+      roomCode: code,
+      playerId: ack.player_id,
+      sessionToken: ack.session_token,
+      playerName,
+    });
+  }
+
+  function createRoom() {
+    const playerName = requireName();
+    if (!playerName) return;
+    setError("");
+    setErrorField(null);
+    setBusy("create");
+    if (!socket.connected) socket.connect();
+    socket.emit("create_room", { player_name: playerName }, (ack) => {
+      if (ack?.error) return fail(ack.error.message || "Could not deal a new table.", null);
+      setBusy(null);
+      enter(ack, ack.room_code, playerName);
+    });
+  }
+
+  function joinRoom(e) {
+    e.preventDefault();
+    const playerName = requireName();
+    if (!playerName) return;
+    const code = roomCode.trim().toUpperCase();
+    if (code.length !== 5) return fail("Room codes are 5 characters.", "code");
+    setError("");
+    setErrorField(null);
+    setBusy("join");
+    if (!socket.connected) socket.connect();
+    socket.emit("join_room", { room_code: code, player_name: playerName }, (ack) => {
+      if (ack?.error) {
+        return fail(
+          ack.error.code === "room_not_found"
+            ? "No table's running that code. Typo, or it already ended."
+            : ack.error.message || "Could not join that table.",
+          "code"
+        );
+      }
+      setBusy(null);
+      enter(ack, code, playerName);
+    });
+  }
+
+  if (busy) return <Shuffling label={busy === "create" ? "Shuffling up a table…" : "Pulling up a chair…"} />;
+
+  const fieldRing = (field) =>
+    errorField === field
+      ? "border-lie focus:ring-lie/60"
+      : "border-white/10 focus:ring-gold/70";
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-felt-dark to-felt flex items-center justify-center p-4">
-      <div className="w-full max-w-sm">
-        <div className="text-center mb-8">
-          <h1 className="text-5xl font-display font-bold text-white tracking-tight">🃏 Cheat Cards</h1>
-          <p className="text-felt-light/80 mt-2 text-sm">Bluff big. Doubt often. Empty your hand.</p>
+    <div className="min-h-screen bg-felt-table flex items-center justify-center p-4 sm:p-10">
+      <div className="w-full max-w-sm lg:max-w-md">
+        <div className="text-center mb-10 animate-pop-in">
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <div className="animate-hover3">
+              <Card faceDown size="sm" />
+            </div>
+            <h1 className="font-display font-extrabold text-6xl lg:text-7xl text-ivory tracking-tight leading-none">
+              Cheat<span className="text-gold">Cards</span>
+            </h1>
+          </div>
+          <p className="font-display italic text-lg lg:text-xl text-felt-fog">
+            everyone's lying tonight
+          </p>
         </div>
 
-        <div className="bg-black/25 border border-white/10 rounded-2xl p-6 shadow-card-lg">
-          <div className="grid grid-cols-2 gap-1 bg-black/30 rounded-full p-1 mb-5">
-            {["create", "join"].map((m) => (
-              <button
-                key={m}
-                type="button"
-                onClick={() => {
-                  setMode(m);
-                  setError("");
-                }}
-                className={`rounded-full py-2 text-sm font-semibold transition-colors ${
-                  mode === m ? "bg-amber-400 text-felt-dark" : "text-white/70 hover:text-white"
-                }`}
-              >
-                {m === "create" ? "Create Room" : "Join Room"}
-              </button>
-            ))}
+        <div className="rounded-2xl border border-white/10 bg-black/25 p-6 shadow-card-lg">
+          <label className="block font-mono text-[11px] uppercase tracking-[0.18em] text-felt-fog/80 mb-2">
+            Your name
+          </label>
+          <input
+            key={`name-${shakeKey}`}
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            maxLength={20}
+            placeholder="who's playing?"
+            className={`w-full h-12 rounded-xl border bg-black/30 px-4 text-ivory placeholder:text-felt-fog/40 focus:outline-none focus:ring-2 transition-colors mb-5 ${fieldRing(
+              "name"
+            )} ${errorField === "name" ? "animate-shake" : ""}`}
+          />
+
+          <button
+            type="button"
+            onClick={createRoom}
+            className="w-full h-12 rounded-full bg-gold hover:bg-gold-300 text-ink font-semibold text-lg transition-colors shadow-gold"
+          >
+            Start a game
+          </button>
+
+          <div className="flex items-center gap-3 my-6">
+            <div className="h-px flex-1 bg-white/10" />
+            <span className="font-display italic text-sm text-felt-fog/70">
+              or join one already going
+            </span>
+            <div className="h-px flex-1 bg-white/10" />
           </div>
 
-          <form onSubmit={submit} className="space-y-4">
-            <div>
-              <label className="block text-xs font-semibold text-felt-light/80 mb-1 uppercase tracking-wide">
-                Your name
-              </label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                maxLength={20}
-                placeholder="e.g. Mukunthan"
-                className="w-full rounded-lg bg-white/95 px-3 py-2 text-felt-dark placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400"
-              />
-            </div>
-
-            {mode === "join" && (
-              <div>
-                <label className="block text-xs font-semibold text-felt-light/80 mb-1 uppercase tracking-wide">
-                  Room code
-                </label>
-                <input
-                  type="text"
-                  value={roomCode}
-                  onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
-                  maxLength={5}
-                  placeholder="ABCDE"
-                  className="w-full rounded-lg bg-white/95 px-3 py-2 text-felt-dark tracking-[0.3em] font-mono text-center placeholder:text-slate-400 placeholder:tracking-[0.3em] focus:outline-none focus:ring-2 focus:ring-amber-400"
-                />
-              </div>
-            )}
-
-            {error && <p className="text-red-400 text-sm">{error}</p>}
-
+          <form onSubmit={joinRoom} className="space-y-3">
+            <input
+              key={`code-${shakeKey}`}
+              type="text"
+              value={roomCode}
+              onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
+              maxLength={5}
+              placeholder="ABCDE"
+              className={`w-full h-12 rounded-xl border bg-black/30 px-4 text-center font-mono text-xl tracking-[0.35em] text-ivory placeholder:text-felt-fog/30 focus:outline-none focus:ring-2 transition-colors ${fieldRing(
+                "code"
+              )} ${errorField === "code" ? "animate-shake" : ""}`}
+            />
             <button
               type="submit"
-              disabled={busy}
-              className="w-full bg-amber-400 hover:bg-amber-300 disabled:opacity-60 text-felt-dark font-bold py-2.5 rounded-lg transition-colors"
+              className="w-full h-12 rounded-full border border-gold/50 text-gold hover:bg-gold/10 font-semibold transition-colors"
             >
-              {busy ? "…" : mode === "create" ? "Create Room" : "Join Room"}
+              Join room
             </button>
           </form>
+
+          {error && (
+            <p className="mt-4 text-center text-lie text-sm flex items-center justify-center gap-2">
+              <span aria-hidden>🙃</span>
+              {error}
+            </p>
+          )}
         </div>
 
-        <p className="text-center text-felt-light/50 text-xs mt-6">2–4 players · one shared room code</p>
+        <p className="text-center font-mono text-[11px] text-felt-fog/50 mt-8">
+          2–4 players · one shared room code
+        </p>
       </div>
     </div>
   );

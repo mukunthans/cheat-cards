@@ -35,6 +35,13 @@ export default function useRoomSocket(session) {
 
   const revealTimer = useRef(null);
   const burnedTimer = useRef(null);
+  // Mirrors of the round's declared value and pile size, kept in refs so the
+  // doubt_resolved handler can read them without a stale closure. The server
+  // emits doubt_resolved before the turn_changed that clears the round, so these
+  // still hold the round's values when the reveal arrives — they only enrich the
+  // reveal copy, never any decision.
+  const declaredRef = useRef(null);
+  const pileSizeRef = useRef(0);
 
   const pushToast = useCallback((message, tone = "error") => {
     const id = ++toastSeq;
@@ -72,6 +79,7 @@ export default function useRoomSocket(session) {
     }
 
     function onTurnChanged(payload) {
+      declaredRef.current = payload.round_declared_value;
       setTurn({
         activePlayerId: payload.active_player_id,
         roundDeclaredValue: payload.round_declared_value,
@@ -80,6 +88,8 @@ export default function useRoomSocket(session) {
     }
 
     function onCardsPlayed(payload) {
+      declaredRef.current = payload.declared_value;
+      pileSizeRef.current = payload.pile_size;
       setPile({
         size: payload.pile_size,
         lastPlayerId: payload.player_id,
@@ -95,6 +105,7 @@ export default function useRoomSocket(session) {
     }
 
     function onRoundBurned(payload) {
+      pileSizeRef.current = 0;
       setPile({ size: 0, lastPlayerId: null, lastCount: null, doubtDeadline: null });
       setBurned(payload);
       setLastEvent({ type: "round_burned", payload, ts: Date.now() });
@@ -104,8 +115,9 @@ export default function useRoomSocket(session) {
 
     function onDoubtResolved(payload) {
       setPile({ size: 0, lastPlayerId: null, lastCount: null, doubtDeadline: null });
-      setReveal(payload);
+      setReveal({ ...payload, declared_value: declaredRef.current, pile_count: pileSizeRef.current });
       setLastEvent({ type: "doubt_resolved", payload, ts: Date.now() });
+      pileSizeRef.current = 0;
       clearTimeout(revealTimer.current);
       revealTimer.current = setTimeout(() => setReveal(null), 5500);
     }

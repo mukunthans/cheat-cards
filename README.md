@@ -21,6 +21,28 @@ npm run dev
 
 Open http://localhost:5173
 
+## Testing 2–4 players on one machine
+
+`localStorage` is shared by every tab on an origin, so a second tab at
+`localhost:5173` would reconnect as the *first* player rather than joining as a new
+one. Add a `?seat=` parameter to namespace the stored session per tab:
+
+| Tab | URL |
+|---|---|
+| Player 1 | `http://localhost:5173/?seat=1` |
+| Player 2 | `http://localhost:5173/?seat=2` |
+| Player 3 | `http://localhost:5173/?seat=3` |
+| Player 4 | `http://localhost:5173/?seat=4` |
+
+Each is an independent player in an ordinary browser tab — no separate browsers or
+private windows needed. Refreshing a tab keeps its seat, so the 30-second reconnect
+grace can be tested by reloading (or closing and reopening the same `?seat=` URL)
+mid-game. With no `?seat=` the keys are unchanged, so the deployed app behaves
+exactly as before.
+
+Create a room in seat 1, copy the 5-character room code, and join with it from the
+other seats. The game starts once at least two players are ready.
+
 ## Deployment
 
 The server is a FastAPI + Socket.IO app deployed as a container on Render's free
