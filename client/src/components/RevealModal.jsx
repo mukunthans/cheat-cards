@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import Card from "./Card.jsx";
 
 const CARD_STAGGER_MS = 80;
@@ -5,15 +6,27 @@ const FLIP_MS = 600;
 
 /** Doubt resolution — only the doubted cards' true values are ever shown here. */
 export default function RevealModal({ reveal, players, onClose }) {
-  if (!reveal) return null;
-
-  const nameOf = (id) => players.find((p) => p.id === id)?.name || "Someone";
-  const cards = reveal.revealed_cards || [];
-  const declared = reveal.declared_value;
-  const pileCount = reveal.pile_count;
+  const cards = reveal?.revealed_cards || [];
   const stagger = Math.min(CARD_STAGGER_MS, 800 / Math.max(1, cards.length - 1));
   const stampDelay = (cards.length - 1) * stagger + FLIP_MS + 250;
 
+  useEffect(() => {
+    if (!reveal?.was_lie) return;
+    const clip = new Audio(`${import.meta.env.BASE_URL}audio/liar-caught.mp3`);
+    const timer = setTimeout(() => {
+      // The reveal still works when the clip is missing or the browser blocks sound.
+      clip.play().catch(() => {});
+    }, stampDelay);
+    return () => {
+      clearTimeout(timer);
+      clip.pause();
+    };
+  }, [reveal, stampDelay]);
+
+  if (!reveal) return null;
+  const nameOf = (id) => players.find((p) => p.id === id)?.name || "Someone";
+  const declared = reveal.declared_value;
+  const pileCount = reveal.pile_count;
   const liar = reveal.was_lie;
   const accent = liar ? "text-lie" : "text-truth";
   const takerName = nameOf(reveal.pile_goes_to);
