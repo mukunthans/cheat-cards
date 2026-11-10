@@ -59,13 +59,14 @@ export default function Game({
   const wouldEmptyHand = selected.length > 0 && selected.length === hand.length;
   const myDoubtsMade = self?.doubts_made ?? 0;
   const doubtsLeft = Math.max(0, minDoubts - myDoubtsMade);
+  const mustPass = isMyTurn && hand.length === 1 && doubtsLeft > 0;
   const quotaBlocked = wouldEmptyHand && myDoubtsMade < minDoubts;
   const canPlay =
     isMyTurn &&
     selected.length >= 1 &&
     (!mustDeclare || declaredValue !== null) &&
     !quotaBlocked;
-  const canPass = isMyTurn && roundInProgress;
+  const canPass = isMyTurn && (roundInProgress || mustPass);
 
   const claimValue = mustDeclare ? declaredValue : turn.roundDeclaredValue;
   const doubtOpen =
@@ -139,14 +140,16 @@ export default function Game({
 
         <p className="font-display italic text-lg text-ivory/90 text-center min-h-[1.75rem]">
           {turn.timedOutPlayerId && `${nameOf(turn.timedOutPlayerId)} ran out of time. `}
-          {isMyTurn
+          {mustPass
+            ? `You can pass now. You need ${doubtsLeft} more doubt${doubtsLeft === 1 ? "" : "s"} to play your last card.`
+            : isMyTurn
             ? mustDeclare
               ? "Your move — kick off a round"
               : "Your move"
             : `${nameOf(turn.activePlayerId)}'s move…`}
           {turn.turnDeadline != null && (
             <span className="block text-sm font-mono text-felt-fog">
-              {Math.max(0, Math.ceil((turn.turnDeadline - nowTs) / 1000))}s to {roundInProgress ? "play or pass" : "open the round"}
+              {Math.max(0, Math.ceil((turn.turnDeadline - nowTs) / 1000))}s left
             </span>
           )}
         </p>
@@ -169,13 +172,13 @@ export default function Game({
       </main>
 
       <footer className="border-t border-white/10 bg-felt-void/60 px-4 sm:px-10 pt-3 pb-5 sm:pt-4 sm:pb-6">
-        {mustDeclare && (
+        {mustDeclare && !mustPass && (
           <div className="mb-3">
             <DeclareBar value={declaredValue} onChange={setDeclaredValue} />
           </div>
         )}
 
-        <Hand cards={hand} selected={selected} onToggle={toggleCard} disabled={!isMyTurn} />
+        <Hand cards={hand} selected={selected} onToggle={toggleCard} disabled={!isMyTurn || mustPass} />
 
         {quotaBlocked && (
           <p className="flex items-center justify-center gap-2 text-center text-lie text-sm mb-3">

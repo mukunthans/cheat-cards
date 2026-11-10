@@ -465,6 +465,35 @@ async def _quota_block() -> None:
 # ====================================================== 3. round mechanics
 
 
+def test_last_card_opener_who_owes_a_doubt_can_pass(server) -> None:
+    asyncio.run(_last_card_opener_pass())
+
+
+async def _last_card_opener_pass() -> None:
+    async with game_room(2, {"min_doubts": 1}) as (host, guest):
+        await host.play(host.hand_ids()[:-1], declared=3)
+        await guest.wait_for("cards_played")
+        await guest.play(guest.hand_ids()[:1])
+        await host.wait_until("host's turn", lambda: host.turn_number == 3)
+        await host.send("pass_turn")
+        await guest.wait_for("player_passed")
+        await guest.send("pass_turn")
+        await host.wait_until("host opens again", lambda: host.turn_number == 5)
+        last_card = host.hand_ids()
+        assert len(last_card) == 1 and host.declared is None
+
+        mark = guest.mark()
+        await host.send("pass_turn")
+        turn = await guest.wait_for("turn_changed", since=mark, timeout=2)
+        assert turn["active_player_id"] == guest.player_id
+        assert turn["round_declared_value"] is None
+        assert 29_000 <= turn["turn_deadline_ts"] - turn["server_now_ts"] <= 30_000
+        await guest.play(guest.hand_ids()[:1], declared=7)
+        played = await guest.wait_for("cards_played", since=mark)
+        assert played["pile_size"] == 1
+        assert host.hand_ids() == last_card and host.doubts[host.player_id] == 0
+
+
 def test_pass_around_burns_pile(server) -> None:
     asyncio.run(_pass_around_burn())
 

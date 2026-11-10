@@ -42,6 +42,8 @@ quota required to win.
 - **Round start:** the round starter plays one or more cards face-down and DECLARES a number
   0–10 (e.g. "three 5s" = 3 cards, declared value 5). The declared value LOCKS for the
   whole round.
+- If the opener has exactly one card and still owes a doubt, they may pass
+  immediately. The next seat opens the round with a fresh 30 seconds.
 - **Subsequent turns in the round:** on your turn you must do exactly one of:
   1. **Play** one or more cards face-down, claiming they are the locked value (you may lie), OR
   2. **Pass** (you keep your cards, turn moves on).

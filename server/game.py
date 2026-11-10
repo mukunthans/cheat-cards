@@ -232,13 +232,16 @@ class Game:
         if err is not None:
             return [err]
         if self.round_declared_value is None:
-            return [
-                self._error(player_id, "invalid_action", "You must start the round by playing cards.")
-            ]
+            player = self._by_id[player_id]
+            if len(player.hand) != 1 or player.doubts_made >= self.settings.min_doubts:
+                return [
+                    self._error(player_id, "invalid_action", "You must start the round by playing cards.")
+                ]
         events = self._close_window()
         if self.state == "finished":
             return events
-        self.passed_players.add(player_id)
+        if self.round_declared_value is not None:
+            self.passed_players.add(player_id)
         events.append(Event("player_passed", {"player_id": player_id}))
         self._advance_turn()
         events.extend(self._maybe_burn())
