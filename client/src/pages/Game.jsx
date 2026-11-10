@@ -50,11 +50,11 @@ export default function Game({
   // window lapses, so no half-open affordance is left on screen. The server's clock
   // still decides; this only stops offering an action that would be rejected.
   useEffect(() => {
-    if (!pile.doubtDeadline && !turn.openingDeadline) return;
+    if (!pile.doubtDeadline && !turn.turnDeadline) return;
     setNowTs(Date.now());
     const id = setInterval(() => setNowTs(Date.now()), 200);
     return () => clearInterval(id);
-  }, [pile.doubtDeadline, turn.openingDeadline]);
+  }, [pile.doubtDeadline, turn.turnDeadline]);
 
   const wouldEmptyHand = selected.length > 0 && selected.length === hand.length;
   const myDoubtsMade = self?.doubts_made ?? 0;
@@ -144,9 +144,9 @@ export default function Game({
               ? "Your move — kick off a round"
               : "Your move"
             : `${nameOf(turn.activePlayerId)}'s move…`}
-          {turn.openingDeadline != null && (
+          {turn.turnDeadline != null && (
             <span className="block text-sm font-mono text-felt-fog">
-              {Math.max(0, Math.ceil((turn.openingDeadline - nowTs) / 1000))}s to open the round
+              {Math.max(0, Math.ceil((turn.turnDeadline - nowTs) / 1000))}s to {roundInProgress ? "play or pass" : "open the round"}
             </span>
           )}
         </p>

@@ -84,8 +84,8 @@ export default function useRoomSocket(session) {
         activePlayerId: payload.active_player_id,
         roundDeclaredValue: payload.round_declared_value,
         turnNumber: payload.turn_number,
-        openingDeadline: payload.opening_deadline_ts == null ? null :
-          Date.now() + payload.opening_deadline_ts - payload.server_now_ts,
+        turnDeadline: payload.turn_deadline_ts == null ? null :
+          Date.now() + payload.turn_deadline_ts - payload.server_now_ts,
         timedOutPlayerId: payload.timed_out_player_id,
       });
     }

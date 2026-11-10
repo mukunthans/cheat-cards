@@ -209,22 +209,15 @@ def wrong_value(v: int) -> int:
     return (v + 1) % 11
 
 
-async def burn_down(host: Bot, guest: Bot, target: int) -> None:
-    """2-player helper: host plays (guest passes -> burn) until host holds
-    exactly `target` cards. Never makes a hand-emptying play."""
-    while len(host.hand) > target:
-        await host.wait_until(
-            "host starts a round",
-            lambda: host.active == host.player_id and host.declared is None,
-        )
-        take = min(4, len(host.hand) - target)
-        cards = host.hand[:take]
-        hm, gm = host.mark(), guest.mark()
-        await host.play([c["id"] for c in cards], declared=cards[0]["value"])
-        await guest.wait_for("cards_played", since=gm)
-        await guest.wait_until("guest's turn", lambda: guest.active == guest.player_id)
-        await guest.send("pass_turn")
-        await host.wait_for("round_burned", since=hm)
+async def play_down(host: Bot, guest: Bot, target: int, *, bluff_last: bool = False) -> None:
+    """Leave target cards with the host and return the turn under a locked claim."""
+    claim = host.hand[-1]["value"]
+    if bluff_last:
+        claim = wrong_value(claim)
+    await host.play(host.hand_ids()[:-target], declared=claim)
+    await guest.wait_for("cards_played")
+    await guest.send("pass_turn")
+    await host.wait_until("host to play again", lambda: host.turn_number == 3)
 
 
 async def assert_no_state_change(bots: list[Bot], marks: list[int], hands_before: list[int]) -> None:
@@ -256,12 +249,11 @@ async def _core_flow() -> None:
                 assert not {c["id"] for c in data["your_hand"]} & host_ids
         assert host.active == host.player_id  # join order = turn order
 
-        # host dumps 4 / 4 / 2 with guest passing (burn) in between
-        await burn_down(host, guest, 2)
+        await play_down(host, guest, 2)
         assert len(host.hand) == 2
         last = host.hand
         gm = guest.mark()
-        await host.play([c["id"] for c in last], declared=last[0]["value"])
+        await host.play([c["id"] for c in last])
         played = await guest.wait_for("cards_played", since=gm)
         assert played["count"] == 2 and isinstance(played["doubt_deadline_ts"], int)
         await guest.wait_until("guest's turn", lambda: guest.active == guest.player_id)
@@ -285,7 +277,7 @@ async def _opening_timeout_is_per_room() -> None:
     async with game_room(4) as idle, game_room(2) as playing:
         host, next_player, *_ = idle
         first = await host.wait_for("turn_changed")
-        assert 29_000 <= first["opening_deadline_ts"] - first["server_now_ts"] <= 30_000
+        assert 29_000 <= first["turn_deadline_ts"] - first["server_now_ts"] <= 30_000
         mark = host.mark()
         hands = [b.hand_ids() for b in idle]
         await playing[0].play(playing[0].hand_ids()[:1], declared=3)
@@ -294,26 +286,28 @@ async def _opening_timeout_is_per_room() -> None:
         assert turn["active_player_id"] == next_player.player_id
         assert turn["timed_out_player_id"] == host.player_id
         assert turn["round_declared_value"] is None
-        assert turn["opening_deadline_ts"] > first["opening_deadline_ts"]
+        assert turn["turn_deadline_ts"] > first["turn_deadline_ts"]
         assert [b.hand_ids() for b in idle] == hands
-        assert playing[1].active == playing[1].player_id and playing[1].declared == 3
+        await playing[0].wait_for("player_passed", timeout=5)
+        assert playing[0].declared == 3
+        await playing[0].wait_until("auto-pass returns turn", lambda: playing[0].turn_number == 3)
         await next_player.play(next_player.hand_ids()[:1], declared=7)
         assert (await host.wait_for("cards_played"))["declared_value"] == 7
 
 
-def test_opening_timer_pauses_during_reconnect(server) -> None:
-    asyncio.run(_opening_timer_reconnect())
+def test_turn_timer_pauses_during_reconnect(server) -> None:
+    asyncio.run(_turn_timer_reconnect())
 
 
-async def _opening_timer_reconnect() -> None:
+async def _turn_timer_reconnect() -> None:
     async with game_room(2) as (host, guest):
         original = await guest.wait_for("turn_changed")
         await asyncio.sleep(0.3)
         mark = guest.mark()
         await host.sio.disconnect()
         paused = await guest.wait_for("turn_changed", since=mark)
-        assert paused["opening_deadline_ts"] is None
-        remaining = original["opening_deadline_ts"] - paused["server_now_ts"]
+        assert paused["turn_deadline_ts"] is None
+        remaining = original["turn_deadline_ts"] - paused["server_now_ts"]
         mark = guest.mark()
         fresh = Bot("returning host")
         try:
@@ -323,7 +317,7 @@ async def _opening_timer_reconnect() -> None:
             })
             resumed = await guest.wait_for("turn_changed", since=mark)
             assert resumed["active_player_id"] == host.player_id
-            assert abs(resumed["opening_deadline_ts"] - resumed["server_now_ts"] - remaining) < 100
+            assert abs(resumed["turn_deadline_ts"] - resumed["server_now_ts"] - remaining) < 100
             assert (await fresh.wait_for("turn_changed")) == resumed
         finally:
             await fresh.sio.disconnect()
@@ -458,14 +452,10 @@ def test_quota_blocks_hand_emptying_play(server) -> None:
 async def _quota_block() -> None:
     async with game_room(2, {"deck_mode": "random", "card_count": 20, "min_doubts": 2}) as bots:
         host, guest = bots
-        await burn_down(host, guest, 2)
-        await host.wait_until(
-            "host starts a round",
-            lambda: host.active == host.player_id and host.declared is None,
-        )
+        await play_down(host, guest, 2)
         marks = [b.mark() for b in bots]
         sizes = [len(b.hand) for b in bots]
-        await host.play(host.hand_ids(), declared=host.hand[0]["value"])
+        await host.play(host.hand_ids())
         err = await host.wait_for("error", since=marks[0])
         assert err["code"] == "quota_block"
         assert err["message"] == "You need 2 more doubts before you can play your last cards."
@@ -484,19 +474,19 @@ async def _pass_around_burn() -> None:
         p1, p2, p3 = bots
         cards = p1.hand[:2]
         await p1.play([c["id"] for c in cards], declared=cards[0]["value"])
-        for passer in (p2, p3):
+        for passer in (p2, p3, p1):
             await passer.wait_until("their turn", lambda b=passer: b.active == b.player_id)
             await passer.send("pass_turn")
         burned = await p1.wait_for("round_burned")
-        assert burned == {"new_starter_id": p1.player_id, "burned_count": 2}
+        assert burned == {"new_starter_id": p2.player_id, "burned_count": 2}
         await p1.wait_until(
-            "p1 starts fresh round",
-            lambda: p1.active == p1.player_id and p1.declared is None,
+            "p2 starts fresh round",
+            lambda: p1.active == p2.player_id and p1.declared is None,
         )
         # burned pile is gone for good: new round starts from a clean pile
-        card = p1.hand[0]
+        card = p2.hand[0]
         m = p2.mark()
-        await p1.play([card["id"]], declared=card["value"])
+        await p2.play([card["id"]], declared=card["value"])
         played = await p2.wait_for("cards_played", since=m)
         assert played["pile_size"] == 1
 
@@ -543,14 +533,14 @@ async def _doubt_truth() -> None:
         resolved = await guest.wait_for("doubt_resolved")
         assert resolved["was_lie"] is False
         assert resolved["pile_goes_to"] == guest.player_id
-        assert resolved["new_starter_id"] == host.player_id
+        assert resolved["new_starter_id"] == guest.player_id
         await guest.wait_until(
             "guest ate the pile", lambda: len(guest.hand) == guest_start + 1
         )
         await guest.wait_until(
             "guest quota counted lose", lambda: guest.doubts.get(guest.player_id) == 1
         )
-        await host.wait_until("host starts next round", lambda: host.active == host.player_id)
+        await host.wait_until("guest starts next round", lambda: host.active == guest.player_id)
 
 
 # ============================================================== 5. timers
@@ -573,8 +563,10 @@ async def _doubt_after_expiry() -> None:
         assert guest.count("doubt_resolved", since=m) == 0
         assert host.count("doubt_resolved") == 0
         await guest.wait_until("no quota counted", lambda: guest.doubts.get(guest.player_id) == 0)
-        # pile untouched by the late doubt: passing now burns exactly 1 card
+        # Both players pass on the single card left by the late doubt.
         await guest.send("pass_turn")
+        await host.wait_for("player_passed")
+        await host.send("pass_turn")
         burned = await guest.wait_for("round_burned")
         assert burned["burned_count"] == 1
 
@@ -597,8 +589,10 @@ async def _early_window_close() -> None:
         for bot in bots:
             assert bot.count("doubt_resolved") == 0
         await p3.wait_until("no quota counted", lambda: p3.doubts.get(p3.player_id) == 0)
-        # pile intact: p3 passing completes the pass-around and burns 1 card
+        # The play survives until both remaining seats pass.
         await p3.send("pass_turn")
+        await p1.wait_until("p1 to act", lambda: p1.turn_number == 4)
+        await p1.send("pass_turn")
         burned = await p3.wait_for("round_burned", since=m)
         assert burned["burned_count"] == 1
 
@@ -613,10 +607,10 @@ def test_last_play_truthful_doubted_player_still_wins(server) -> None:
 async def _last_play_truth() -> None:
     async with game_room(2, {"deck_mode": "random", "card_count": 20, "min_doubts": 0}) as bots:
         host, guest = bots
-        await burn_down(host, guest, 1)
+        await play_down(host, guest, 1)
         card = host.hand[0]
         gm = guest.mark()
-        await host.play([card["id"]], declared=card["value"])  # truthful, hand-emptying
+        await host.play([card["id"]])  # final card matches the locked claim
         await guest.wait_for("cards_played", since=gm)
         await guest.send("call_doubt")
         resolved = await guest.wait_for("doubt_resolved", since=gm)
@@ -625,7 +619,7 @@ async def _last_play_truth() -> None:
         over = await guest.wait_for("game_over", since=gm)
         assert over["winner_id"] == host.player_id
         assert over["reason"] == "empty_hand"
-        await guest.wait_until("doubter still ate the pile", lambda: len(guest.hand) == 11)
+        await guest.wait_until("doubter still ate the pile", lambda: len(guest.hand) == 20)
 
 
 def test_last_play_lie_doubted_game_continues(server) -> None:
@@ -635,16 +629,16 @@ def test_last_play_lie_doubted_game_continues(server) -> None:
 async def _last_play_lie() -> None:
     async with game_room(2, {"deck_mode": "random", "card_count": 20, "min_doubts": 0}) as bots:
         host, guest = bots
-        await burn_down(host, guest, 1)
+        await play_down(host, guest, 1, bluff_last=True)
         card = host.hand[0]
         gm = guest.mark()
-        await host.play([card["id"]], declared=wrong_value(card["value"]))  # lying dump
+        await host.play([card["id"]])  # lying dump
         await guest.wait_for("cards_played", since=gm)
         await guest.send("call_doubt")
         resolved = await guest.wait_for("doubt_resolved", since=gm)
         assert resolved["was_lie"] is True
         assert resolved["pile_goes_to"] == host.player_id
-        await host.wait_until("host took the pile back", lambda: len(host.hand) == 1)
+        await host.wait_until("host took the pile back", lambda: len(host.hand) == 10)
         await asyncio.sleep(DRAIN_S)
         assert host.game_over is None and guest.game_over is None
         await guest.wait_until("game still playing", lambda: guest.room_state == "playing")
@@ -857,61 +851,43 @@ async def _leakage_game() -> dict[str, set[str]]:
         await check_hand(guest)
         await check_hand(host)
 
-        # 2. host truthful start; guest lies; host doubts -> guest eats pile
-        card = host.hand[0]
-        m = guest.mark()
-        await host.play([card["id"]], declared=card["value"])
-        sim_play(host, [card["id"]])
-        allowed_reveals.add(frozenset([card["id"]]))
-        locked = card["value"]
-        await guest.wait_for("cards_played", since=m)
-        await guest.wait_until("guest's turn", lambda: guest.active == guest.player_id)
-        liar_card = next(c for c in guest.hand if c["value"] != locked)
+        # Guest opens with a bluff; host catches it and earns the quota.
+        card = guest.hand[0]
         hm = host.mark()
-        await guest.play([liar_card["id"]])
-        sim_play(guest, [liar_card["id"]])
-        allowed_reveals.add(frozenset([liar_card["id"]]))
+        await guest.play([card["id"]], declared=wrong_value(card["value"]))
+        sim_play(guest, [card["id"]])
+        allowed_reveals.add(frozenset([card["id"]]))
         await host.wait_for("cards_played", since=hm)
         await host.send("call_doubt")
         r = await host.wait_for("doubt_resolved", since=hm)
         assert r["was_lie"] is True
         sim_pickup(guest)
         await check_hand(guest)
-        await check_hand(host)
 
-        # 3. pass-around burn
-        await host.wait_until(
-            "host starts", lambda: host.active == host.player_id and host.declared is None
-        )
+        # Both seats pass after the host's play, so guest opens next.
         card = host.hand[0]
         gm = guest.mark()
         await host.play([card["id"]], declared=card["value"])
         sim_play(host, [card["id"]])
-        allowed_reveals.add(frozenset([card["id"]]))  # doubtable until pass
         await guest.wait_for("cards_played", since=gm)
-        await guest.wait_until("guest's turn", lambda: guest.active == guest.player_id)
+        hm = host.mark()
         await guest.send("pass_turn")
-        await host.wait_for("round_burned")
+        await host.wait_for("player_passed", since=hm)
+        await host.send("pass_turn")
+        await guest.wait_for("round_burned", since=gm)
         pile.clear()
 
-        # 4. host dumps to victory (quota 1 met); guest passes every round
-        while sim[host.player_id]:
-            await host.wait_until(
-                "host starts", lambda: host.active == host.player_id and host.declared is None
-            )
-            ids = list(sim[host.player_id])[:4]
-            declared = sim[host.player_id][ids[0]]
-            gm = guest.mark()
-            await host.play(ids, declared=declared)
-            sim_play(host, ids)
-            allowed_reveals.add(frozenset(ids))
-            await guest.wait_for("cards_played", since=gm)
-            await guest.wait_until("guest's turn", lambda: guest.active == guest.player_id)
-            hm = host.mark()
-            await guest.send("pass_turn")
-            if sim[host.player_id]:
-                await host.wait_for("round_burned", since=hm)
-                pile.clear()
+        card = guest.hand[0]
+        hm = host.mark()
+        await guest.play([card["id"]], declared=card["value"])
+        sim_play(guest, [card["id"]])
+        await host.wait_for("cards_played", since=hm)
+        ids = list(sim[host.player_id])
+        gm = guest.mark()
+        await host.play(ids)
+        sim_play(host, ids)
+        await guest.wait_for("cards_played", since=gm)
+        await guest.send("pass_turn")
         over = await guest.wait_for("game_over")
         assert over["winner_id"] == host.player_id
 

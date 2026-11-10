@@ -100,8 +100,7 @@ class Game:
         self.round_declared_value: int | None = None
         self.pile: list[Card] = []
         self.last_play: tuple[str, list[Card]] | None = None
-        self.last_player_who_played: str | None = None
-        self.passes_since_last_play: int = 0
+        self.passed_players: set[str] = set()
         self.doubt_window_open: bool = False
         self.pending_winner: str | None = None
         self.state: str = "playing"  # "playing" | "finished"
@@ -193,8 +192,7 @@ class Game:
         if self.round_declared_value is None:
             self.round_declared_value = declared_value
         self.last_play = (player_id, cards)
-        self.last_player_who_played = player_id
-        self.passes_since_last_play = 0
+        self.passed_players.clear()
         self.doubt_window_open = True
         if not player.hand:
             # Win is pending until the doubt window closes (see _close_window)
@@ -215,15 +213,19 @@ class Game:
         events.append(self.turn_event())
         return events
 
-    def expire_opening_turn(self) -> list[Event]:
-        """Give the next seat the unopened round without touching any cards."""
-        if self.state != "playing" or self.round_declared_value is not None:
-            return []
+    def expire_turn(self) -> list[Event]:
         previous = self.active_player_id
-        self._advance_turn()
-        turn = self.turn_event()
-        turn.payload["timed_out_player_id"] = previous
-        return [turn]
+        if previous is None:
+            return []
+        if self.round_declared_value is None:
+            self._advance_turn()
+            events = [self.turn_event()]
+        else:
+            events = self.pass_turn(previous)
+        for event in events:
+            if event.name == "turn_changed":
+                event.payload["timed_out_player_id"] = previous
+        return events
 
     def pass_turn(self, player_id: str) -> list[Event]:
         err = self._validate_turn(player_id)
@@ -236,7 +238,7 @@ class Game:
         events = self._close_window()
         if self.state == "finished":
             return events
-        self.passes_since_last_play += 1
+        self.passed_players.add(player_id)
         events.append(Event("player_passed", {"player_id": player_id}))
         self._advance_turn()
         events.extend(self._maybe_burn())
@@ -262,7 +264,7 @@ class Game:
         receiver = self._by_id[receiver_id]
         receiver.hand.extend(self.pile)
         self.pile = []
-        new_starter_id = doubter_id if was_lie else played_pid
+        new_starter_id = self.active_player_id
 
         events = [
             Event(
@@ -282,8 +284,7 @@ class Game:
         pending = self.pending_winner
         self.pending_winner = None
         self.last_play = None
-        self.last_player_who_played = None
-        self.passes_since_last_play = 0
+        self.passed_players.clear()
         self.round_declared_value = None
 
         if pending == played_pid and not was_lie:
@@ -291,7 +292,6 @@ class Game:
             events.extend(self._finish(played_pid, "empty_hand"))
             return events
 
-        self.active_index = self.turn_order.index(new_starter_id)
         self.turn_number += 1
         events.append(self.turn_event())
         return events
@@ -323,9 +323,11 @@ class Game:
             # Quota is waived on forfeit
             events.extend(self._finish(self.turn_order[0], "forfeit"))
             return events
-        if was_active:
+        self.passed_players.discard(player_id)
+        burned = self._maybe_burn()
+        if was_active or burned:
             self.turn_number += 1
-            events.extend(self._maybe_burn())
+            events.extend(burned)
             events.append(self.turn_event())
         return events
 
@@ -377,20 +379,14 @@ class Game:
         self.turn_number += 1
 
     def _maybe_burn(self) -> list[Event]:
-        """Burn the pile when a pass-around returns to the last player who played."""
-        if not self.pile or self.last_player_who_played is None:
-            return []
-        returned_to_last = self.active_player_id == self.last_player_who_played
-        last_gone = self.last_player_who_played not in self.turn_order
-        full_cycle = last_gone and self.passes_since_last_play >= len(self.turn_order)
-        if not (returned_to_last or full_cycle):
+        """Discard the pile when every remaining seat has passed since the last play."""
+        if not self.pile or not self.passed_players.issuperset(self.turn_order):
             return []
         burned = len(self.pile)
         self.pile = []
         self.round_declared_value = None
         self.last_play = None
-        self.last_player_who_played = None
-        self.passes_since_last_play = 0
+        self.passed_players.clear()
         self.doubt_window_open = False
         return [Event("round_burned", {"new_starter_id": self.active_player_id, "burned_count": burned})]
 

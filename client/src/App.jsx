@@ -75,7 +75,7 @@ function RoomScreen({ session, onLeave }) {
         id: `burn-${burned.new_starter_id}-${burned.burned_count}`,
         icon: "🔥",
         title: "Pile's burned!",
-        body: `Nobody called it — ${nameOf(burned.new_starter_id)} starts fresh.`,
+        body: `Everyone passed — ${nameOf(burned.new_starter_id)} starts fresh.`,
         tone: "burn",
       });
     }

@@ -156,17 +156,22 @@ class TestRounds:
         game.play_cards("p0", card_ids(game, "p0", [3, 3]), declared_value=3)
         game.pass_turn("p1")
         events = game.pass_turn("p2")
-        burn = evt(events, "round_burned")
-        assert burn.payload == {"new_starter_id": "p0", "burned_count": 2}
-        assert game.pile == []
-        assert game.round_declared_value is None
-        assert game.active_player_id == "p0"
+        assert "round_burned" not in names(events)
+        burn = evt(game.pass_turn("p0"), "round_burned")
+        assert burn.payload == {"new_starter_id": "p1", "burned_count": 2}
+        assert game.pile == [] and game.round_declared_value is None
+        assert game.active_player_id == "p1"
 
-    def test_starter_plays_all_others_pass_edge(self):
-        game = make_game([[3, 9], [7, 7]])
+    def test_play_on_second_lap_resets_every_pass(self):
+        game = make_game([[3, 9, 7], [1], [2], [4]])
         game.play_cards("p0", card_ids(game, "p0", [3]), declared_value=3)
-        events = game.pass_turn("p1")
-        assert evt(events, "round_burned").payload["new_starter_id"] == "p0"
+        for pid in ("p1", "p2", "p3"):
+            game.pass_turn(pid)
+        played = game.play_cards("p0", card_ids(game, "p0", [9]))
+        assert evt(played, "cards_played").payload["pile_size"] == 2
+        for pid in ("p1", "p2", "p3"):
+            assert "round_burned" not in names(game.pass_turn(pid))
+        assert evt(game.pass_turn("p0"), "round_burned").payload["new_starter_id"] == "p1"
 
 
 # ----------------------------------------------------------------- doubt
@@ -175,7 +180,7 @@ class TestDoubt:
     def test_doubt_lie_player_picks_up_pile(self):
         game = make_game([[3, 7, 1], [2, 2], [9, 9]])
         game.play_cards("p0", card_ids(game, "p0", [3, 7]), declared_value=3)
-        events = game.call_doubt("p1")
+        events = game.call_doubt("p2")
         resolved = evt(events, "doubt_resolved").payload
         assert resolved["was_lie"] is True
         assert resolved["pile_goes_to"] == "p0"
@@ -193,9 +198,9 @@ class TestDoubt:
         resolved = evt(events, "doubt_resolved").payload
         assert resolved["was_lie"] is False
         assert resolved["pile_goes_to"] == "p1"
-        assert resolved["new_starter_id"] == "p0"
+        assert resolved["new_starter_id"] == "p1"
         assert len(game.hand_of("p1")) == 4  # 2 kept + 2 picked up
-        assert game.active_player_id == "p0"
+        assert game.active_player_id == "p1"
 
     def test_doubt_counts_toward_quota_win_or_lose(self):
         lie = make_game([[4, 1], [2, 2]])
@@ -299,7 +304,7 @@ class TestQuotaAndWin:
         assert "game_over" not in names(events)
         assert game.state == "playing"
         assert len(game.hand_of("p0")) == 1  # picked the pile back up
-        assert game.active_player_id == "p1"  # doubter won, starts next round
+        assert game.active_player_id == "p1"  # next in seat order
 
     def test_doubted_last_play_truth_wins(self):
         game = make_game([[5], [6, 6]])

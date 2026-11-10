@@ -1,8 +1,8 @@
 """Socket layer: translates Socket.IO events into game actions and back.
 
 All game mutations run inside a per-room asyncio.Lock. All timers live here,
-not in the game logic: the 5-second doubt window, the 30-second reconnect
-grace, and the periodic room cleanup sweep. game.py stays pure and sync.
+not in the game logic: turn deadlines, doubt windows, reconnect grace,
+and the periodic room cleanup sweep. game.py stays pure and sync.
 """
 
 from __future__ import annotations
@@ -21,7 +21,7 @@ from game import ROOM, Event
 from room_manager import GRACE_MS, Room, RoomError, RoomManager
 
 DOUBT_WINDOW_MS: int = 5_000
-OPENING_MS: int = 30_000
+TURN_MS: int = 30_000
 CLEANUP_INTERVAL_S: int = 60
 
 # Comma-separated list of allowed client origins, e.g.
@@ -46,9 +46,9 @@ class RoomRuntime:
     doubt_gen: int = 0  # bumped whenever the current window becomes stale
     doubt_task: asyncio.Task[None] | None = None
     grace_tasks: dict[str, asyncio.Task[None]] = field(default_factory=dict)
-    opening_task: asyncio.Task[None] | None = None
-    opening_deadline: int | None = None
-    opening_remaining: int = OPENING_MS
+    turn_task: asyncio.Task[None] | None = None
+    turn_deadline: int | None = None
+    turn_remaining: int = TURN_MS
 
 
 manager = RoomManager()
@@ -85,12 +85,12 @@ async def emit_events(room_code: str, events: list[Event]) -> None:
     for event in events:
         if event.name == "turn_changed":
             rt = _runtime(room_code)
-            _stop_opening_timer(rt)
-            rt.opening_remaining = OPENING_MS
-            _start_opening_timer(manager.get_room(room_code), rt)
-            event.payload.update(_opening_clock(rt))
+            _stop_turn_timer(rt)
+            rt.turn_remaining = TURN_MS
+            _start_turn_timer(manager.get_room(room_code), rt)
+            event.payload.update(_turn_clock(rt))
         elif event.name == "game_over":
-            _stop_opening_timer(_runtime(room_code))
+            _stop_turn_timer(_runtime(room_code))
         if event.to == ROOM:
             await sio.emit(event.name, event.payload, room=room_code)
         else:  # private: routed to the player's current sid, if connected
@@ -124,33 +124,33 @@ async def after_action(room_code: str, events: list[Event]) -> None:
 # ----------------------------------------------------------------- timers
 
 
-def _opening_clock(rt: RoomRuntime) -> dict[str, int | None]:
-    return {"opening_deadline_ts": rt.opening_deadline, "server_now_ts": now_ms()}
+def _turn_clock(rt: RoomRuntime) -> dict[str, int | None]:
+    return {"turn_deadline_ts": rt.turn_deadline, "server_now_ts": now_ms()}
 
 
-def _stop_opening_timer(rt: RoomRuntime) -> None:
-    if rt.opening_task is not None:
-        rt.opening_task.cancel()
-    rt.opening_task = None
-    rt.opening_deadline = None
+def _stop_turn_timer(rt: RoomRuntime) -> None:
+    if rt.turn_task is not None:
+        rt.turn_task.cancel()
+    rt.turn_task = None
+    rt.turn_deadline = None
 
 
-def _start_opening_timer(room: Room, rt: RoomRuntime) -> None:
+def _start_turn_timer(room: Room, rt: RoomRuntime) -> None:
     game = room.game
-    if game is None or game.active_player_id is None or game.round_declared_value is not None:
+    if game is None or game.active_player_id is None:
         return
     if not room.player(game.active_player_id).connected:
         return  # The disconnect grace timer holds this seat.
-    rt.opening_deadline = now_ms() + rt.opening_remaining
-    rt.opening_task = asyncio.create_task(_opening_timer(room, rt))
+    rt.turn_deadline = now_ms() + rt.turn_remaining
+    rt.turn_task = asyncio.create_task(_turn_timer(room, rt))
 
 
-async def _opening_timer(room: Room, rt: RoomRuntime) -> None:
-    await asyncio.sleep(rt.opening_remaining / 1000)
+async def _turn_timer(room: Room, rt: RoomRuntime) -> None:
+    await asyncio.sleep(rt.turn_remaining / 1000)
     async with rt.lock:
-        if rt.opening_task is asyncio.current_task():
-            rt.opening_task = None
-            await after_action(room.code, room.game.expire_opening_turn())
+        if rt.turn_task is asyncio.current_task():
+            rt.turn_task = None
+            await after_action(room.code, room.game.expire_turn())
 
 
 def _invalidate_doubt_timer(rt: RoomRuntime) -> None:
@@ -183,6 +183,7 @@ async def _doubt_timer(room_code: str, generation: int) -> None:
             return
         if room.game is None:
             return
+        rt.doubt_task = None
         events = room.game.close_doubt_window()
         await after_action(room_code, events)
 
@@ -212,7 +213,7 @@ async def _cleanup_loop() -> None:
         for code in manager.cleanup(now_ms()):
             rt = runtimes.pop(code, None)
             if rt is not None:
-                _stop_opening_timer(rt)
+                _stop_turn_timer(rt)
                 _invalidate_doubt_timer(rt)
                 for task in rt.grace_tasks.values():
                     task.cancel()
@@ -301,15 +302,11 @@ async def reconnect_player(sid: str, data: dict[str, Any]) -> dict[str, Any]:
                 {"your_hand": [c.to_dict() for c in game.hand_of(player.id)]},
                 to=sid,
             )
-            resume = (
-                grace is not None
-                and game.active_player_id == player.id
-                and game.round_declared_value is None
-            )
+            resume = grace is not None and game.active_player_id == player.id
             if resume:
-                _start_opening_timer(room, rt)
+                _start_turn_timer(room, rt)
             turn = game.turn_event()
-            turn.payload.update(_opening_clock(rt))
+            turn.payload.update(_turn_clock(rt))
             await sio.emit(turn.name, turn.payload, to=room.code if resume else sid)
         await emit_room_update(room.code)
         return {"player_id": player.id}
@@ -360,9 +357,9 @@ async def play_cards(sid: str, data: dict[str, Any]) -> None:
         if room.game is None:
             await emit_error(sid, "not_started", "The game has not started.")
             return
-        if rt.opening_deadline is not None and now_ms() >= rt.opening_deadline:
-            await after_action(room_code, room.game.expire_opening_turn())
-            await emit_error(sid, "turn_expired", "The opening turn expired.")
+        if rt.turn_deadline is not None and now_ms() >= rt.turn_deadline:
+            await after_action(room_code, room.game.expire_turn())
+            await emit_error(sid, "turn_expired", "Your turn expired.")
             return
         events = room.game.play_cards(
             player_id, list(data.get("card_ids") or []), data.get("declared_value")
@@ -430,11 +427,11 @@ async def disconnect(sid: str) -> None:
         if removed:  # lobby: seat dropped outright
             await emit_room_update(room_code)
             return
-        if rt.opening_deadline is not None and room.game.active_player_id == player_id:
-            rt.opening_remaining = max(0, rt.opening_deadline - now_ms())
-            _stop_opening_timer(rt)
+        if rt.turn_deadline is not None and room.game.active_player_id == player_id:
+            rt.turn_remaining = max(0, rt.turn_deadline - now_ms())
+            _stop_turn_timer(rt)
             turn = room.game.turn_event()
-            turn.payload.update(_opening_clock(rt))
+            turn.payload.update(_turn_clock(rt))
             await sio.emit(turn.name, turn.payload, room=room_code)
         await sio.emit(
             "player_disconnected",

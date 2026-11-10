@@ -47,18 +47,13 @@ quota required to win.
   2. **Pass** (you keep your cards, turn moves on).
 - First round: the round starter is the first player in turn order. After a doubt
   resolution: see 2.6. After an all-pass round end: see 2.5.
-- Each round starter gets 30 seconds to declare and play. On expiry, the next
-  seat in join order gets a fresh 30 seconds to open. Hands and pile stay intact.
-  The opening clock pauses during the starter's disconnect grace and resumes
-  with the remaining time on reconnect. Turns after the opening play are untimed.
+- Every turn lasts 30 seconds. An opening timeout hands the declaration to the next
+  seat. Once a number has been declared, a timeout counts as that player's pass.
+  The clock pauses during the active player's disconnect grace and resumes on reconnect.
 ### 2.5 Round End (everyone passes)
-- If play goes fully around and returns to the LAST PLAYER WHO PLAYED CARDS without
-  anyone playing (i.e., every other active player passed consecutively), the round ends:
-  - The entire pile is **BURNED** (discarded from the game, never revealed).
-  - The last player who played cards becomes the new round starter and declares a
-    new number with a new play.
-- Edge case: if the round starter plays and ALL others pass, same rule applies —
-  pile burns, that same player starts a new round.
+- The pile burns only after every remaining player has passed since the latest play,
+  including the player who made it. A new play resets all passes.
+- The next seat after the final passer opens a fresh round and declares a new number.
 ### 2.6 Doubt System
 - A doubt targets ONLY the most recent card play. You cannot doubt a pass.
 - **Doubt window:** opens the instant cards are played. Closes at whichever comes FIRST:
@@ -71,8 +66,8 @@ quota required to win.
     → the player who played picks up the ENTIRE pile.
   - If ALL flipped cards = declared value → TRUTH → the doubter picks up the ENTIRE pile.
   - Reveal ONLY the doubted cards' values to all clients (not the rest of the pile).
-- After resolution: the pile is empty. The player who WON the doubt (the doubter if it
-  was a lie, the player if it was truth) becomes the new round starter.
+- After resolution: the pile is empty. The next seat after the player whose cards were challenged
+  opens the new round, regardless of who challenged or took the pile.
 - **Quota counting:** every doubt made counts toward the doubter's quota, WIN OR LOSE.
   Quota measures doubts made, not doubts won.
 ### 2.7 Win Condition & Quota Enforcement
@@ -138,7 +133,7 @@ quota required to win.
 | room_update | room | { players[{id,name,ready,connected,card_count,doubts_made}], host_id, settings, state: "lobby"\|"playing"\|"finished" } |
 | game_started | room | { turn_order[], settings } |
 | hand_updated | private | { your_hand: Card[] } |
-| turn_changed | room | { active_player_id, round_declared_value \| null, turn_number, opening_deadline_ts \| null, server_now_ts, timed_out_player_id? } |
+| turn_changed | room | { active_player_id, round_declared_value \| null, turn_number, turn_deadline_ts \| null, server_now_ts, timed_out_player_id? } |
 | cards_played | room | { player_id, count, declared_value, pile_size, doubt_deadline_ts } |
 | player_passed | room | { player_id } |
 | round_burned | room | { new_starter_id, burned_count } |

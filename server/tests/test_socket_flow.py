@@ -177,7 +177,7 @@ async def _run_timer_win() -> None:
                 break  # final play made; leave the doubt window untouched
             await guest.wait_until("guest's turn", lambda: guest.active == guest.player_id)
             await guest.send("pass_turn")
-            await host.wait_for("round_burned")  # 2 players: every pass burns
+            await host.wait_for("player_passed")
 
         started_waiting = time.monotonic()
         over = await host.wait_for("game_over", timeout=8)  # no client acts now
@@ -234,21 +234,22 @@ async def _run_full_game() -> None:
         resolved = await host.wait_for("doubt_resolved")
         assert resolved["was_lie"] is False
         assert resolved["pile_goes_to"] == guest.player_id
-        assert resolved["new_starter_id"] == host.player_id
+        assert resolved["new_starter_id"] == guest.player_id
         assert [c["value"] for c in resolved["revealed_cards"]] == [card["value"]]
         await guest.wait_until("guest picked up pile", lambda: len(guest.hand) == 11)
         await host.wait_until(
             "guest quota counted", lambda: host.doubts.get(guest.player_id) == 1
         )
 
-        # ---- pass-around burn --------------------------------------------
-        card = host.hand[0]
-        await host.play([card["id"]], declared=card["value"])
-        await guest.wait_for("cards_played")
+        # All seats, including the player who opened, pass before the burn.
+        card = guest.hand[0]
+        await guest.play([card["id"]], declared=card["value"])
+        await host.wait_for("cards_played")
+        await host.send("pass_turn")
+        await guest.wait_for("player_passed")
         await guest.send("pass_turn")
         burned = await host.wait_for("round_burned")
         assert burned == {"new_starter_id": host.player_id, "burned_count": 1}
-        # hands: host 8, guest 11
 
         # ---- host earns their doubt (outcome may go either way) ----------
         card = host.hand[0]
