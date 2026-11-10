@@ -11,7 +11,8 @@ export default function RevealModal({ reveal, players, onClose }) {
   const cards = reveal.revealed_cards || [];
   const declared = reveal.declared_value;
   const pileCount = reveal.pile_count;
-  const stampDelay = (cards.length - 1) * CARD_STAGGER_MS + FLIP_MS + 250;
+  const stagger = Math.min(CARD_STAGGER_MS, 800 / Math.max(1, cards.length - 1));
+  const stampDelay = (cards.length - 1) * stagger + FLIP_MS + 250;
 
   const liar = reveal.was_lie;
   const accent = liar ? "text-lie" : "text-truth";
@@ -19,13 +20,13 @@ export default function RevealModal({ reveal, players, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
-      <div className="bg-felt-dark border border-white/10 rounded-2xl shadow-card-lg max-w-md w-full p-8 text-center animate-pop-in">
+      <div className="bg-felt-dark border border-white/10 rounded-2xl shadow-card-lg max-w-md max-h-full overflow-y-auto w-full p-8 text-center animate-pop-in">
         <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-felt-fog/70 mb-6">
           {nameOf(reveal.played_player_id)} claimed{declared !== null && declared !== undefined ? ` ${declared}s` : ""} ·{" "}
           {nameOf(reveal.doubter_id)} doubted
         </p>
 
-        <div className="flex justify-center gap-3 mb-6" style={{ perspective: "800px" }}>
+        <div className="flex flex-wrap justify-center gap-3 mb-6" style={{ perspective: "800px" }}>
           {cards.map((c, i) => (
             <Card
               key={c.id}
@@ -33,7 +34,7 @@ export default function RevealModal({ reveal, players, onClose }) {
               size="lg"
               tone={liar ? (c.value === declared ? null : "lie") : "truth"}
               className="animate-reveal-flip"
-              style={{ animationDelay: `${i * CARD_STAGGER_MS}ms` }}
+              style={{ animationDelay: `${i * stagger}ms` }}
             />
           ))}
         </div>

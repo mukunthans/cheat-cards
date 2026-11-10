@@ -129,11 +129,23 @@ class TestRounds:
         assert_error(game.play_cards("p2", card_ids(game, "p2", [5]), 5), "out_of_turn")
         assert_error(game.pass_turn("p1"), "out_of_turn")
 
-    def test_play_size_limits(self):
-        game = make_game([[1, 1, 1, 1, 1, 1], [2, 2]])
+    def test_play_rejects_empty_or_repeated_cards(self):
+        game = make_game([[1, 1], [2, 2]])
         assert_error(game.play_cards("p0", [], declared_value=1), "invalid_cards")
-        too_many = card_ids(game, "p0", [1, 1, 1, 1, 1])
-        assert_error(game.play_cards("p0", too_many, declared_value=1), "invalid_cards")
+        duplicate = card_ids(game, "p0", [1]) * 2
+        assert_error(game.play_cards("p0", duplicate, declared_value=1), "invalid_cards")
+
+    def test_entire_hand_can_follow_a_claim_and_be_challenged(self):
+        game = make_game([[3, 9], [3, 3, 3, 3, 3, 10]])
+        game.play_cards("p0", card_ids(game, "p0", [3]), declared_value=3)
+        hand_ids = [card.id for card in game.hand_of("p1")]
+        played = evt(game.play_cards("p1", hand_ids), "cards_played").payload
+        assert (played["count"], played["declared_value"], played["pile_size"]) == (6, 3, 7)
+        assert game.hand_of("p1") == []
+        result = evt(game.call_doubt("p0"), "doubt_resolved").payload
+        assert result["was_lie"] and result["pile_goes_to"] == "p1"
+        assert [card["id"] for card in result["revealed_cards"]] == hand_ids
+        assert len(game.hand_of("p1")) == 7 and game.state == "playing"
 
     def test_cards_must_be_in_hand(self):
         game = make_game([[1, 2], [3, 4]])

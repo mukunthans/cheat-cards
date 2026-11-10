@@ -13,7 +13,7 @@ const GUTTER = 8; // safety margin so the fan never trips the scrollbar
  * hand grows, so a 15-card fixed-deck hand still lands inside a 390px table instead
  * of running off the edge. It only scrolls once even the tightest fan overflows.
  */
-export default function Hand({ cards, selected, onToggle, disabled = false, maxSelect = 4 }) {
+export default function Hand({ cards, selected, onToggle, disabled = false }) {
   const wrapRef = useRef(null);
   const [{ width, cardW }, setBox] = useState({ width: 0, cardW: FALLBACK_CARD_W });
 
@@ -50,12 +50,11 @@ export default function Hand({ cards, selected, onToggle, disabled = false, maxS
       <div className="flex justify-center w-max min-w-full">
         {cards.map((card, i) => {
           const isSelected = selected.includes(card.id);
-          const blocked = disabled || (!isSelected && selected.length >= maxSelect);
           return (
             <button
               key={card.id}
               type="button"
-              disabled={blocked}
+              disabled={disabled}
               onClick={() => onToggle(card.id)}
               aria-pressed={isSelected}
               style={{
@@ -63,10 +62,10 @@ export default function Hand({ cards, selected, onToggle, disabled = false, maxS
                 animationDelay: `${Math.min(i, 12) * 35}ms`,
               }}
               className={`shrink-0 animate-deal-in rounded-xl transition-transform focus:outline-none focus-visible:ring-2 focus-visible:ring-gold ${
-                isSelected ? "z-20" : "z-10 hover:z-20"
-              } ${blocked ? "cursor-not-allowed" : "cursor-pointer hover:-translate-y-1"}`}
+                disabled ? "cursor-not-allowed" : "cursor-pointer hover:-translate-y-1"
+              }`}
             >
-              <Card value={card.value} selected={isSelected} disabled={blocked && !isSelected} size="lg" corner indexOnly={indexOnly} />
+              <Card value={card.value} selected={isSelected} disabled={disabled && !isSelected} size="lg" corner indexOnly={indexOnly} />
             </button>
           );
         })}

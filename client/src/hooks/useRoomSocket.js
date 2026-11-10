@@ -75,7 +75,7 @@ export default function useRoomSocket(session) {
     }
 
     function onHandUpdated(payload) {
-      setHand(payload.your_hand);
+      setHand([...payload.your_hand].sort((a, b) => a.value - b.value));
     }
 
     function onTurnChanged(payload) {

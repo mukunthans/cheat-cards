@@ -14,8 +14,6 @@ from dataclasses import dataclass, field
 from typing import Any
 
 CARD_VALUES: tuple[int, ...] = tuple(range(11))  # 0..10
-MIN_PLAY: int = 1
-MAX_PLAY: int = 4
 
 ROOM: str = "room"  # Event.to sentinel: broadcast to the whole room
 
@@ -150,8 +148,8 @@ class Game:
         if err is not None:
             return [err]
         player = self._by_id[player_id]
-        if not MIN_PLAY <= len(card_ids) <= MAX_PLAY:
-            return [self._error(player_id, "invalid_cards", "You must play 1-4 cards.")]
+        if not card_ids or len(card_ids) > len(player.hand):
+            return [self._error(player_id, "invalid_cards", "Choose one or more cards from your hand.")]
         if len(set(card_ids)) != len(card_ids):
             return [self._error(player_id, "invalid_cards", "Duplicate card ids in play.")]
         hand_by_id = {c.id: c for c in player.hand}

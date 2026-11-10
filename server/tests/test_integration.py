@@ -318,18 +318,19 @@ def test_error_play_size_bounds(server) -> None:
 
 async def _play_size_bounds() -> None:
     async with game_room(2) as bots:
-        host, _ = bots
+        host, guest = bots
         marks = [b.mark() for b in bots]
         sizes = [len(b.hand) for b in bots]
         m = host.mark()
         await host.play([], declared=3)  # 0 cards
         err = await host.wait_for("error", since=m)
         assert err["code"] == "invalid_cards"
-        m = host.mark()
-        await host.play(host.hand_ids()[:5], declared=3)  # 5 cards
-        err = await host.wait_for("error", since=m)
-        assert err["code"] == "invalid_cards"
         await assert_no_state_change(bots, marks, sizes)
+        await host.play(host.hand_ids()[:-1], declared=3)
+        played = await guest.wait_for("cards_played", since=marks[1])
+        assert played["count"] == sizes[0] - 1
+        assert played["declared_value"] == 3
+        await host.wait_until("one card left", lambda: len(host.hand) == 1)
 
 
 def test_error_declared_value_mid_round(server) -> None:

@@ -39,11 +39,11 @@ quota required to win.
 | min_doubts | 0–10 | 2 |
 ### 2.4 Turn & Round System
 - Turn order = join order, fixed at game start. Play proceeds clockwise (list order).
-- **Round start:** the round starter plays 1–4 cards face-down and DECLARES a number
+- **Round start:** the round starter plays one or more cards face-down and DECLARES a number
   0–10 (e.g. "three 5s" = 3 cards, declared value 5). The declared value LOCKS for the
   whole round.
 - **Subsequent turns in the round:** on your turn you must do exactly one of:
-  1. **Play** 1–4 cards face-down, claiming they are the locked value (you may lie), OR
+  1. **Play** one or more cards face-down, claiming they are the locked value (you may lie), OR
   2. **Pass** (you keep your cards, turn moves on).
 - First round: the round starter is the first player in turn order. After a doubt
   resolution: see 2.6. After an all-pass round end: see 2.5.
@@ -97,7 +97,8 @@ quota required to win.
 - Host disconnect in LOBBY: host role passes to the next joined player. Host disconnect
   in game: same as any player; host role (irrelevant mid-game) passes on.
 ### 2.9 Misc Rules
-- Play size is always 1–4 cards. Server rejects 0 or >4.
+- A player may play any number of distinct cards from their hand, including their entire
+  hand when the quota in §2.7 is met. Players see their own hand sorted from 0 to 10.
 - Server validates card ids belong to the player's actual hand.
 - Out-of-turn plays/passes are rejected with an error.
 - Room codes: 5 uppercase alphanumeric chars, collision-checked.

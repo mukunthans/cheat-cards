@@ -63,7 +63,6 @@ export default function Game({
   const canPlay =
     isMyTurn &&
     selected.length >= 1 &&
-    selected.length <= 4 &&
     (!mustDeclare || declaredValue !== null) &&
     !quotaBlocked;
   const canPass = isMyTurn && roundInProgress;
