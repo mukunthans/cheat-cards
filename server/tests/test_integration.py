@@ -218,6 +218,7 @@ async def play_down(host: Bot, guest: Bot, target: int, *, bluff_last: bool = Fa
     await guest.wait_for("cards_played")
     await guest.send("pass_turn")
     await host.wait_until("host to play again", lambda: host.turn_number == 3)
+    await guest.wait_until("host to play again", lambda: guest.turn_number == 3)
 
 
 async def assert_no_state_change(bots: list[Bot], marks: list[int], hands_before: list[int]) -> None:
@@ -479,6 +480,7 @@ async def _last_card_opener_pass() -> None:
         await guest.wait_for("player_passed")
         await guest.send("pass_turn")
         await host.wait_until("host opens again", lambda: host.turn_number == 5)
+        await guest.wait_until("host opens again", lambda: guest.turn_number == 5)
         last_card = host.hand_ids()
         assert len(last_card) == 1 and host.declared is None
 
