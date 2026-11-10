@@ -18,9 +18,10 @@ import socketio
 from fastapi import FastAPI
 
 from game import ROOM, Event
-from room_manager import GRACE_MS, RoomError, RoomManager
+from room_manager import GRACE_MS, Room, RoomError, RoomManager
 
 DOUBT_WINDOW_MS: int = 5_000
+OPENING_MS: int = 30_000
 CLEANUP_INTERVAL_S: int = 60
 
 # Comma-separated list of allowed client origins, e.g.
@@ -45,6 +46,9 @@ class RoomRuntime:
     doubt_gen: int = 0  # bumped whenever the current window becomes stale
     doubt_task: asyncio.Task[None] | None = None
     grace_tasks: dict[str, asyncio.Task[None]] = field(default_factory=dict)
+    opening_task: asyncio.Task[None] | None = None
+    opening_deadline: int | None = None
+    opening_remaining: int = OPENING_MS
 
 
 manager = RoomManager()
@@ -79,6 +83,14 @@ async def emit_error(sid: str, code: str, message: str) -> None:
 
 async def emit_events(room_code: str, events: list[Event]) -> None:
     for event in events:
+        if event.name == "turn_changed":
+            rt = _runtime(room_code)
+            _stop_opening_timer(rt)
+            rt.opening_remaining = OPENING_MS
+            _start_opening_timer(manager.get_room(room_code), rt)
+            event.payload.update(_opening_clock(rt))
+        elif event.name == "game_over":
+            _stop_opening_timer(_runtime(room_code))
         if event.to == ROOM:
             await sio.emit(event.name, event.payload, room=room_code)
         else:  # private: routed to the player's current sid, if connected
@@ -110,6 +122,35 @@ async def after_action(room_code: str, events: list[Event]) -> None:
 
 
 # ----------------------------------------------------------------- timers
+
+
+def _opening_clock(rt: RoomRuntime) -> dict[str, int | None]:
+    return {"opening_deadline_ts": rt.opening_deadline, "server_now_ts": now_ms()}
+
+
+def _stop_opening_timer(rt: RoomRuntime) -> None:
+    if rt.opening_task is not None:
+        rt.opening_task.cancel()
+    rt.opening_task = None
+    rt.opening_deadline = None
+
+
+def _start_opening_timer(room: Room, rt: RoomRuntime) -> None:
+    game = room.game
+    if game is None or game.active_player_id is None or game.round_declared_value is not None:
+        return
+    if not room.player(game.active_player_id).connected:
+        return  # The disconnect grace timer holds this seat.
+    rt.opening_deadline = now_ms() + rt.opening_remaining
+    rt.opening_task = asyncio.create_task(_opening_timer(room, rt))
+
+
+async def _opening_timer(room: Room, rt: RoomRuntime) -> None:
+    await asyncio.sleep(rt.opening_remaining / 1000)
+    async with rt.lock:
+        if rt.opening_task is asyncio.current_task():
+            rt.opening_task = None
+            await after_action(room.code, room.game.expire_opening_turn())
 
 
 def _invalidate_doubt_timer(rt: RoomRuntime) -> None:
@@ -171,6 +212,7 @@ async def _cleanup_loop() -> None:
         for code in manager.cleanup(now_ms()):
             rt = runtimes.pop(code, None)
             if rt is not None:
+                _stop_opening_timer(rt)
                 _invalidate_doubt_timer(rt)
                 for task in rt.grace_tasks.values():
                     task.cancel()
@@ -259,15 +301,16 @@ async def reconnect_player(sid: str, data: dict[str, Any]) -> dict[str, Any]:
                 {"your_hand": [c.to_dict() for c in game.hand_of(player.id)]},
                 to=sid,
             )
-            await sio.emit(
-                "turn_changed",
-                {
-                    "active_player_id": game.active_player_id,
-                    "round_declared_value": game.round_declared_value,
-                    "turn_number": game.turn_number,
-                },
-                to=sid,
+            resume = (
+                grace is not None
+                and game.active_player_id == player.id
+                and game.round_declared_value is None
             )
+            if resume:
+                _start_opening_timer(room, rt)
+            turn = game.turn_event()
+            turn.payload.update(_opening_clock(rt))
+            await sio.emit(turn.name, turn.payload, to=room.code if resume else sid)
         await emit_room_update(room.code)
         return {"player_id": player.id}
 
@@ -316,6 +359,10 @@ async def play_cards(sid: str, data: dict[str, Any]) -> None:
         room = manager.get_room(room_code)
         if room.game is None:
             await emit_error(sid, "not_started", "The game has not started.")
+            return
+        if rt.opening_deadline is not None and now_ms() >= rt.opening_deadline:
+            await after_action(room_code, room.game.expire_opening_turn())
+            await emit_error(sid, "turn_expired", "The opening turn expired.")
             return
         events = room.game.play_cards(
             player_id, list(data.get("card_ids") or []), data.get("declared_value")
@@ -369,12 +416,13 @@ async def disconnect(sid: str) -> None:
     if ctx is None:
         return
     room_code, player_id = ctx
-    if player_to_sid.get(player_id) == sid:
-        del player_to_sid[player_id]
     rt = _runtime(room_code)
     async with rt.lock:
+        if player_to_sid.get(player_id) != sid:
+            return  # A reconnect already replaced this socket.
+        del player_to_sid[player_id]
         try:
-            _, removed, grace_deadline = manager.mark_disconnected(
+            room, removed, grace_deadline = manager.mark_disconnected(
                 room_code, player_id, now_ms()
             )
         except RoomError:
@@ -382,6 +430,12 @@ async def disconnect(sid: str) -> None:
         if removed:  # lobby: seat dropped outright
             await emit_room_update(room_code)
             return
+        if rt.opening_deadline is not None and room.game.active_player_id == player_id:
+            rt.opening_remaining = max(0, rt.opening_deadline - now_ms())
+            _stop_opening_timer(rt)
+            turn = room.game.turn_event()
+            turn.payload.update(_opening_clock(rt))
+            await sio.emit(turn.name, turn.payload, room=room_code)
         await sio.emit(
             "player_disconnected",
             {"player_id": player_id, "grace_deadline_ts": grace_deadline},

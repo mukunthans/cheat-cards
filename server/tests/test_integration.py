@@ -277,6 +277,58 @@ async def _core_flow() -> None:
 # ===================================================== 2. rule enforcement
 
 
+def test_opening_timeout_is_per_room(server) -> None:
+    asyncio.run(_opening_timeout_is_per_room())
+
+
+async def _opening_timeout_is_per_room() -> None:
+    async with game_room(4) as idle, game_room(2) as playing:
+        host, next_player, *_ = idle
+        first = await host.wait_for("turn_changed")
+        assert 29_000 <= first["opening_deadline_ts"] - first["server_now_ts"] <= 30_000
+        mark = host.mark()
+        hands = [b.hand_ids() for b in idle]
+        await playing[0].play(playing[0].hand_ids()[:1], declared=3)
+        await playing[1].wait_until("guest's turn", lambda: playing[1].active == playing[1].player_id)
+        turn = await host.wait_for("turn_changed", since=mark, timeout=32)
+        assert turn["active_player_id"] == next_player.player_id
+        assert turn["timed_out_player_id"] == host.player_id
+        assert turn["round_declared_value"] is None
+        assert turn["opening_deadline_ts"] > first["opening_deadline_ts"]
+        assert [b.hand_ids() for b in idle] == hands
+        assert playing[1].active == playing[1].player_id and playing[1].declared == 3
+        await next_player.play(next_player.hand_ids()[:1], declared=7)
+        assert (await host.wait_for("cards_played"))["declared_value"] == 7
+
+
+def test_opening_timer_pauses_during_reconnect(server) -> None:
+    asyncio.run(_opening_timer_reconnect())
+
+
+async def _opening_timer_reconnect() -> None:
+    async with game_room(2) as (host, guest):
+        original = await guest.wait_for("turn_changed")
+        await asyncio.sleep(0.3)
+        mark = guest.mark()
+        await host.sio.disconnect()
+        paused = await guest.wait_for("turn_changed", since=mark)
+        assert paused["opening_deadline_ts"] is None
+        remaining = original["opening_deadline_ts"] - paused["server_now_ts"]
+        mark = guest.mark()
+        fresh = Bot("returning host")
+        try:
+            await fresh.sio.connect(URL)
+            await fresh.sio.call("reconnect_player", {
+                "room_code": host.room_code, "session_token": host.session_token,
+            })
+            resumed = await guest.wait_for("turn_changed", since=mark)
+            assert resumed["active_player_id"] == host.player_id
+            assert abs(resumed["opening_deadline_ts"] - resumed["server_now_ts"] - remaining) < 100
+            assert (await fresh.wait_for("turn_changed")) == resumed
+        finally:
+            await fresh.sio.disconnect()
+
+
 def test_error_play_out_of_turn(server) -> None:
     asyncio.run(_play_out_of_turn())
 

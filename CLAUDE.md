@@ -47,6 +47,10 @@ quota required to win.
   2. **Pass** (you keep your cards, turn moves on).
 - First round: the round starter is the first player in turn order. After a doubt
   resolution: see 2.6. After an all-pass round end: see 2.5.
+- Each round starter gets 30 seconds to declare and play. On expiry, the next
+  seat in join order gets a fresh 30 seconds to open. Hands and pile stay intact.
+  The opening clock pauses during the starter's disconnect grace and resumes
+  with the remaining time on reconnect. Turns after the opening play are untimed.
 ### 2.5 Round End (everyone passes)
 - If play goes fully around and returns to the LAST PLAYER WHO PLAYED CARDS without
   anyone playing (i.e., every other active player passed consecutively), the round ends:
@@ -134,7 +138,7 @@ quota required to win.
 | room_update | room | { players[{id,name,ready,connected,card_count,doubts_made}], host_id, settings, state: "lobby"\|"playing"\|"finished" } |
 | game_started | room | { turn_order[], settings } |
 | hand_updated | private | { your_hand: Card[] } |
-| turn_changed | room | { active_player_id, round_declared_value \| null, turn_number } |
+| turn_changed | room | { active_player_id, round_declared_value \| null, turn_number, opening_deadline_ts \| null, server_now_ts, timed_out_player_id? } |
 | cards_played | room | { player_id, count, declared_value, pile_size, doubt_deadline_ts } |
 | player_passed | room | { player_id } |
 | round_burned | room | { new_starter_id, burned_count } |

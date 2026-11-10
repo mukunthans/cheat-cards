@@ -133,7 +133,7 @@ class Game:
             )
         ]
         events.extend(self._hand_event(p) for p in self.players)
-        events.append(self._turn_event())
+        events.append(self.turn_event())
         return events
 
     # ------------------------------------------------------------- actions
@@ -212,8 +212,18 @@ class Game:
         )
         events.append(self._hand_event(player))
         self._advance_turn()
-        events.append(self._turn_event())
+        events.append(self.turn_event())
         return events
+
+    def expire_opening_turn(self) -> list[Event]:
+        """Give the next seat the unopened round without touching any cards."""
+        if self.state != "playing" or self.round_declared_value is not None:
+            return []
+        previous = self.active_player_id
+        self._advance_turn()
+        turn = self.turn_event()
+        turn.payload["timed_out_player_id"] = previous
+        return [turn]
 
     def pass_turn(self, player_id: str) -> list[Event]:
         err = self._validate_turn(player_id)
@@ -230,7 +240,7 @@ class Game:
         events.append(Event("player_passed", {"player_id": player_id}))
         self._advance_turn()
         events.extend(self._maybe_burn())
-        events.append(self._turn_event())
+        events.append(self.turn_event())
         return events
 
     def call_doubt(self, doubter_id: str) -> list[Event]:
@@ -283,7 +293,7 @@ class Game:
 
         self.active_index = self.turn_order.index(new_starter_id)
         self.turn_number += 1
-        events.append(self._turn_event())
+        events.append(self.turn_event())
         return events
 
     def close_doubt_window(self) -> list[Event]:
@@ -316,7 +326,7 @@ class Game:
         if was_active:
             self.turn_number += 1
             events.extend(self._maybe_burn())
-            events.append(self._turn_event())
+            events.append(self.turn_event())
         return events
 
     # ------------------------------------------------------------- queries
@@ -416,7 +426,7 @@ class Game:
             to=player.id,
         )
 
-    def _turn_event(self) -> Event:
+    def turn_event(self) -> Event:
         return Event(
             "turn_changed",
             {
