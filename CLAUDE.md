@@ -73,6 +73,7 @@ quota required to win.
 - **Quota counting:** every doubt made counts toward the doubter's quota, WIN OR LOSE.
   Quota measures doubts made, not doubts won.
 ### 2.7 Win Condition & Quota Enforcement
+- If the pile is empty and every remaining seat has exactly one card and still owes doubts, the opener may play that last card. The normal doubt window and bluff penalty apply.
 - A player wins by having ZERO cards in hand AND `doubts_made >= min_doubts`, evaluated
   after their play survives (see below).
 - **Quota block rule:** the server REJECTS any play that would empty a player's hand
@@ -141,6 +142,7 @@ quota required to win.
 | round_burned | room | { new_starter_id, burned_count } |
 | doubt_resolved | room | { doubter_id, played_player_id, was_lie, revealed_cards: Card[], pile_goes_to, new_starter_id } |
 | player_disconnected / player_reconnected | room | { player_id, grace_deadline_ts? } |
+| seat_sync | private | pile count, last play count and player, doubt deadline, disconnected seats, current public reveal, game result. Sent after hand, turn and roster on reconnect. |
 | player_removed | room | { player_id, reason } |
 | game_over | room | { winner_id, winner_name, reason: "empty_hand"\|"forfeit" } |
 | error | private | { code, message } |

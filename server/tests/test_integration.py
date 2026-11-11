@@ -38,7 +38,8 @@ def server():
     proc = subprocess.Popen(
         [sys.executable, "-m", "uvicorn", "main:asgi_app", "--port", str(PORT)],
         cwd=SERVER_DIR,
-        env={**os.environ, "CHEAT_GRACE_MS": str(GRACE_MS)},
+        # This suite creates 20 independent rooms in its race test from one address.
+        env={**os.environ, "CHEAT_GRACE_MS": str(GRACE_MS), "CHEAT_ENTRY_LIMIT": "500"},
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
     )
@@ -949,3 +950,57 @@ async def _leakage_game() -> dict[str, set[str]]:
                         f"{name} leaked card values to {bot.name}: {found}"
                     )
         return report
+
+
+def test_seat_handoff_and_recovery(server):
+    asyncio.run(_seat_handoff_and_recovery())
+
+
+async def _seat_handoff_and_recovery():
+    async with game_room(2, {"min_doubts": 0}) as (host, guest):
+        same_seat = {"room_code": host.room_code, "session_token": host.session_token}
+        assert "error" in await host.sio.call("join_room", {"room_code": host.room_code, "player_name": "Other"})
+        assert "error" in await host.sio.call("create_room", {"player_name": "Other"})
+        cards = host.hand_ids()
+        await host.play(cards, declared=2)
+        await guest.wait_for("cards_played")
+        fresh = Bot("returning host")
+        try:
+            await fresh.sio.connect(URL)
+            ack = await fresh.sio.call("reconnect_player", same_seat)
+            assert ack["player_id"] == host.player_id
+            sync = await fresh.wait_for("seat_sync")
+            assert sync["pile_size"] == sync["last_count"] == len(cards)
+            assert sync["last_player_id"] == host.player_id
+            assert sync["server_now_ts"] < sync["doubt_deadline_ts"]
+            assert sync["game_over"] is None and fresh.declared == 2
+            assert not fresh.hand and not host.sio.connected
+            await guest.send("pass_turn")
+            result = await fresh.wait_for("game_over")
+            mark = fresh.mark()
+            await fresh.sio.call("reconnect_player", same_seat)
+            synced = await fresh.wait_for("seat_sync", since=mark)
+            assert synced["game_over"] == result and synced["doubt_deadline_ts"] is None
+        finally:
+            await fresh.sio.disconnect()
+
+
+def test_refresh_during_reveal_recovers_only_challenged_cards(server):
+    asyncio.run(_refresh_during_reveal())
+
+
+async def _refresh_during_reveal():
+    async with game_room(2) as (host, guest):
+        card = host.hand[0]
+        await host.play([card["id"]], declared=wrong_value(card["value"]))
+        await guest.wait_for("cards_played")
+        await guest.send("call_doubt")
+        resolution = await guest.wait_for("doubt_resolved")
+        await guest.sio.call("reconnect_player", {
+            "room_code": guest.room_code, "session_token": guest.session_token,
+        })
+        sync = await guest.wait_for("seat_sync")
+        assert sync["reveal"] == resolution
+        assert sync["reveal"]["revealed_cards"] == [card]
+        assert sync["reveal"]["expires_ts"] > sync["server_now_ts"]
+        assert sync["pile_size"] == 0 and sync["doubt_deadline_ts"] is None

@@ -12,3 +12,5 @@ const suffix = seat ? `_${seat.replace(/[^a-zA-Z0-9]/g, "").slice(0, 8)}` : "";
 
 export const SESSION_KEY = `cheatcards_session${suffix}`;
 export const NAME_KEY = `cheatcards_name${suffix}`;
+
+export const HINTS_KEY = `cheatcards_hints${suffix}`;

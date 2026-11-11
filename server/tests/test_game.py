@@ -495,3 +495,30 @@ class TestRoomManager:
         with pytest.raises(RoomError) as exc:
             manager.create_room("   ")
         assert exc.value.code == "invalid_name"
+
+
+@pytest.mark.parametrize("outcome", ["unchallenged", "truth", "bluff"])
+def test_all_blocked_last_card_opener(outcome):
+    game = make_game([[2, 6], [3, 5]], min_doubts=2)
+    game.play_cards("p0", card_ids(game, "p0", [6]), 6)
+    game.play_cards("p1", card_ids(game, "p1", [5]))
+    game.pass_turn("p0")
+    game.pass_turn("p1")
+    assert game.last_card_opening()
+    game.play_cards("p0", card_ids(game, "p0", [2]), 4 if outcome == "bluff" else 2)
+    assert game.state == "playing" and game.doubt_window_open
+    if outcome == "unchallenged":
+        game.close_doubt_window()
+    else:
+        game.call_doubt("p1")
+    if outcome == "bluff":
+        assert game.state == "playing" and len(game.hand_of("p0")) == 1
+    else:
+        assert game.winner_id == "p0"
+
+
+def test_quota_still_applies_when_another_single_card_seat_can_open():
+    game = make_game([[2], [3]], min_doubts=1)
+    game.players[1].doubts_made = 1
+    assert not game.last_card_opening()
+    assert_error(game.play_cards("p0", card_ids(game, "p0", [2]), 2), "quota_block")

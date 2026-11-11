@@ -6,10 +6,13 @@ import DoubtButton from "../components/DoubtButton.jsx";
 import DeclareBar from "../components/DeclareBar.jsx";
 import RevealModal from "../components/RevealModal.jsx";
 
+const CARD_NAMES = ["zeros", "ones", "twos", "threes", "fours", "fives", "sixes", "sevens", "eights", "nines", "tens"];
+
 export default function Game({
   room,
   roomCode,
   selfId,
+  showHints,
   hand,
   turn,
   pile,
@@ -59,14 +62,14 @@ export default function Game({
   const wouldEmptyHand = selected.length > 0 && selected.length === hand.length;
   const myDoubtsMade = self?.doubts_made ?? 0;
   const doubtsLeft = Math.max(0, minDoubts - myDoubtsMade);
-  const mustPass = isMyTurn && hand.length === 1 && doubtsLeft > 0;
-  const quotaBlocked = wouldEmptyHand && myDoubtsMade < minDoubts;
+  const mustPass = isMyTurn && hand.length === 1 && doubtsLeft > 0 && !room.last_card_opening;
+  const quotaBlocked = wouldEmptyHand && doubtsLeft > 0 && !room.last_card_opening;
   const canPlay =
     isMyTurn &&
     selected.length >= 1 &&
     (!mustDeclare || declaredValue !== null) &&
     !quotaBlocked;
-  const canPass = isMyTurn && (roundInProgress || mustPass);
+  const canPass = isMyTurn && (roundInProgress || mustPass || room.last_card_opening);
 
   const claimValue = mustDeclare ? declaredValue : turn.roundDeclaredValue;
   const doubtOpen =
@@ -75,6 +78,12 @@ export default function Game({
     !!pile.lastPlayerId &&
     pile.lastPlayerId !== selfId &&
     rideOut !== pile.doubtDeadline;
+
+  function turnHint() {
+    if (room.last_card_opening) return "Everyone is down to one card and owes a doubt. You may play your last card.";
+    if (mustDeclare) return "Choose a number, then select the cards to play face down. You can bluff.";
+    return `Play ${CARD_NAMES[turn.roundDeclaredValue]}, bluff with other cards, or pass.`;
+  }
 
   function toggleCard(id) {
     setSelected((prev) => (prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]));
@@ -147,6 +156,9 @@ export default function Game({
               ? "Your move — kick off a round"
               : "Your move"
             : `${nameOf(turn.activePlayerId)}'s move…`}
+          {showHints && isMyTurn && !mustPass && (
+            <span className="mx-auto mt-1 block max-w-md font-sans text-base not-italic text-ivory">{turnHint()}</span>
+          )}
           {turn.turnDeadline != null && (
             <span className="block text-sm font-mono text-felt-fog">
               {Math.max(0, Math.ceil((turn.turnDeadline - nowTs) / 1000))}s left
@@ -244,7 +256,7 @@ function GameOver({ gameOver, players, onLeave }) {
         <p className="font-display italic text-felt-fog mb-8">
           {forfeit
             ? "Everyone else wandered off. Last one at the table takes it — quota waived."
-            : "Hand empty, quota met — clean sweep."}
+            : "Their last play stood."}
         </p>
 
         <div

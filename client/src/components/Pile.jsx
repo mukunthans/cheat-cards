@@ -20,21 +20,14 @@ export default function Pile({ size, declaredValue, lastPlayerName, lastCount, b
 
   return (
     <div className="flex flex-col items-center gap-2 sm:gap-3">
-      <div className="h-9 flex items-end">
+      <div aria-live="polite" className="text-center">
         {hasDeclared ? (
-          <div
-            key={`${declaredValue}-${size}`}
-            className="animate-tick rounded-full border border-gold/60 bg-felt-dark/90 px-4 py-1.5 shadow-gold"
-          >
-            <span className="text-felt-fog text-xs">Claiming:</span>{" "}
-            <span className="font-display font-extrabold text-gold text-xl align-middle">
-              {declaredValue}s
-            </span>
-          </div>
-        ) : (
-          <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-felt-fog/60">
-            round not started
+          <p className="flex items-center gap-3 rounded-2xl border border-gold/60 bg-felt-dark px-5 py-2 text-ivory">
+            <span className="text-base font-semibold sm:text-xl">Number to claim</span>
+            <strong className="font-display text-5xl leading-none text-gold sm:text-6xl">{declaredValue}</strong>
           </p>
+        ) : (
+          <p className="font-display text-xl font-semibold text-ivory">Waiting for a number</p>
         )}
       </div>
 

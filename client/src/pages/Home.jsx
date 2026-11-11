@@ -20,7 +20,7 @@ function Shuffling({ label }) {
   );
 }
 
-export default function Home({ onJoined }) {
+export default function Home({ onJoined, showHints, onToggleHints }) {
   const [name, setName] = useState(() => localStorage.getItem(NAME_KEY) || "");
   const [roomCode, setRoomCode] = useState("");
   const [error, setError] = useState("");
@@ -167,6 +167,23 @@ export default function Home({ onJoined }) {
               Join room
             </button>
           </form>
+
+          <button
+            type="button"
+            role="switch"
+            aria-label="Turn instructions"
+            aria-checked={showHints}
+            onClick={onToggleHints}
+            className="mt-5 flex min-h-12 w-full items-center justify-between border-t border-white/10 pt-3 text-sm text-ivory"
+          >
+            Turn instructions
+            <span aria-hidden="true" className="flex items-center gap-2">
+              {showHints ? "On" : "Off"}
+              <span className={`inline-flex h-6 w-10 items-center rounded-full px-1 ${showHints ? "justify-end bg-gold" : "justify-start bg-white/25"}`}>
+                <span className="h-4 w-4 rounded-full bg-felt-dark" />
+              </span>
+            </span>
+          </button>
 
           {error && (
             <p className="mt-4 text-center text-lie text-sm flex items-center justify-center gap-2">

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import socket from "./socket.js";
-import { SESSION_KEY } from "./session.js";
+import { SESSION_KEY, HINTS_KEY } from "./session.js";
 import useRoomSocket from "./hooks/useRoomSocket.js";
 import Home from "./pages/Home.jsx";
 import Lobby from "./pages/Lobby.jsx";
@@ -46,13 +46,13 @@ function Toasts({ toasts }) {
   );
 }
 
-function RoomScreen({ session, onLeave }) {
+function RoomScreen({ session, onLeave, showHints }) {
   const { ready, room, hand, turn, pile, reveal, burned, gameOver, disconnected, toasts, fatalError, actions } =
     useRoomSocket(session);
   const [, forceTick] = useState(0);
 
   useEffect(() => {
-    if (fatalError) onLeave();
+    if (fatalError && fatalError !== "seat_replaced") onLeave();
   }, [fatalError, onLeave]);
 
   // Drive the reconnect-grace countdown shown in disconnect toasts.
@@ -92,10 +92,19 @@ function RoomScreen({ session, onLeave }) {
     return list;
   }, [toasts, burned, disconnected, nameOf]);
 
+  if (fatalError === "seat_replaced") {
+    return (
+      <div className="min-h-screen bg-felt-table flex flex-col items-center justify-center gap-4">
+        <p className="text-lg text-ivory">This seat is open in another tab, or the table has closed.</p>
+        <button className="rounded-full bg-gold px-6 py-3 text-ink" onClick={() => onLeave(true)}>Back to home</button>
+      </div>
+    );
+  }
+
   if (!ready) {
     return (
       <div className="min-h-screen bg-felt-table flex items-center justify-center">
-        <p className="font-display italic text-xl text-felt-fog animate-breathe">Connecting…</p>
+        <p className="font-display italic text-xl text-felt-fog animate-breathe">Reconnecting to your table…</p>
       </div>
     );
   }
@@ -110,6 +119,7 @@ function RoomScreen({ session, onLeave }) {
           room={room}
           roomCode={session.roomCode}
           selfId={session.playerId}
+          showHints={showHints}
           hand={hand}
           turn={turn}
           pile={pile}
@@ -127,20 +137,25 @@ function RoomScreen({ session, onLeave }) {
 
 export default function App() {
   const [session, setSession] = useState(loadSession);
+  const [showHints, setShowHints] = useState(() => localStorage.getItem(HINTS_KEY) !== "off");
+  function toggleHints() {
+    localStorage.setItem(HINTS_KEY, showHints ? "off" : "on");
+    setShowHints(!showHints);
+  }
 
   const handleJoined = useCallback((newSession) => {
     localStorage.setItem(SESSION_KEY, JSON.stringify(newSession));
     setSession(newSession);
   }, []);
 
-  const handleLeave = useCallback(() => {
-    localStorage.removeItem(SESSION_KEY);
+  const handleLeave = useCallback((preserveSession) => {
+    if (preserveSession !== true) localStorage.removeItem(SESSION_KEY);
     socket.disconnect();
     setSession(null);
   }, []);
 
   if (!session) {
-    return <Home onJoined={handleJoined} />;
+    return <Home onJoined={handleJoined} showHints={showHints} onToggleHints={toggleHints} />;
   }
-  return <RoomScreen key={session.roomCode + session.playerId} session={session} onLeave={handleLeave} />;
+  return <RoomScreen key={session.roomCode + session.playerId} session={session} onLeave={handleLeave} showHints={showHints} />;
 }

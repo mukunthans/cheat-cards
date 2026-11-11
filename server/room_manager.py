@@ -24,6 +24,7 @@ FINISHED_ROOM_TTL_MS: int = 60 * 60_000  # finished games deleted after 60 min
 
 CODE_CHARS: str = string.ascii_uppercase + string.digits
 CODE_LEN: int = 5
+MAX_ROOMS = 512
 MAX_PLAYERS: int = 4
 MIN_PLAYERS: int = 2
 MAX_NAME_LEN: int = 20
@@ -92,6 +93,7 @@ class Room:
                 for p in self.players
             ],
             "host_id": self.host_id,
+            "last_card_opening": bool(self.game and self.game.last_card_opening()),
             "settings": self.settings.to_dict(),
             "state": self.state,
         }
@@ -105,6 +107,8 @@ class RoomManager:
     # -------------------------------------------------------------- lobby
 
     def create_room(self, player_name: str) -> tuple[Room, RoomPlayer]:
+        if self.room_count >= MAX_ROOMS:
+            raise RoomError("rooms_full", "All tables are in use. Try again later.")
         player = self._new_player(player_name)
         room = Room(code=self._generate_code(), host_id=player.id, players=[player])
         self._rooms[room.code] = room
@@ -200,7 +204,7 @@ class RoomManager:
     def reconnect(self, code: str, session_token: str, now_ms: int) -> tuple[Room, RoomPlayer]:
         room = self.get_room(code)
         player = room.player_by_token(session_token)
-        if player is None:
+        if player is None or (player.grace_deadline_ms is not None and now_ms >= player.grace_deadline_ms):
             raise RoomError("invalid_token", "No seat matches this session token.")
         player.connected = True
         player.grace_deadline_ms = None

@@ -3,6 +3,10 @@ import socket from "../socket.js";
 
 const EMPTY_ROOM = { players: [], host_id: null, settings: null, state: "lobby" };
 
+function localDeadline(deadline, serverNow) {
+  return deadline == null ? null : Date.now() + deadline - serverNow;
+}
+
 let toastSeq = 0;
 
 /**
@@ -20,7 +24,7 @@ let toastSeq = 0;
 export default function useRoomSocket(session) {
   const { roomCode, playerId, sessionToken } = session;
 
-  const [ready, setReady] = useState(false); // first room_update received
+  const [ready, setReady] = useState(false); // authoritative seat state received
   const [room, setRoom] = useState(EMPTY_ROOM);
   const [hand, setHand] = useState([]);
   const [turn, setTurn] = useState({ activePlayerId: null, roundDeclaredValue: null, turnNumber: 0 });
@@ -33,16 +37,10 @@ export default function useRoomSocket(session) {
   const [toasts, setToasts] = useState([]); // { id, message, tone }
   const [fatalError, setFatalError] = useState(null);
 
+  const synced = useRef(false);
   const revealTimer = useRef(null);
+  const lastReveal = useRef(null);
   const burnedTimer = useRef(null);
-  // Mirrors of the round's declared value and pile size, kept in refs so the
-  // doubt_resolved handler can read them without a stale closure. The server
-  // emits doubt_resolved before the turn_changed that clears the round, so these
-  // still hold the round's values when the reveal arrives — they only enrich the
-  // reveal copy, never any decision.
-  const declaredRef = useRef(null);
-  const pileSizeRef = useRef(0);
-
   const pushToast = useCallback((message, tone = "error") => {
     const id = ++toastSeq;
     setToasts((t) => [...t, { id, message, tone }]);
@@ -50,9 +48,26 @@ export default function useRoomSocket(session) {
   }, []);
 
   useEffect(() => {
+    let overdueTimer;
     if (!socket.connected) socket.connect();
 
+    function pauseActions() {
+      clearTimeout(overdueTimer);
+      synced.current = false;
+      setReady(false);
+    }
+
+    function onDisconnect(reason) {
+      pauseActions();
+      if (reason === "io server disconnect") setFatalError("seat_replaced");
+    }
+
+    function onVisible() {
+      if (document.visibilityState === "visible" && socket.connected) onConnect();
+    }
+
     function onConnect() {
+      pauseActions();
       socket.emit(
         "reconnect_player",
         { room_code: roomCode, session_token: sessionToken },
@@ -64,6 +79,24 @@ export default function useRoomSocket(session) {
 
     function onRoomUpdate(payload) {
       setRoom(payload);
+    }
+
+    function onSeatSync(payload) {
+      setPile({
+        size: payload.pile_size, lastPlayerId: payload.last_player_id, lastCount: payload.last_count,
+        doubtDeadline: localDeadline(payload.doubt_deadline_ts, payload.server_now_ts),
+      });
+      setGameOver(payload.game_over);
+      setDisconnected(Object.fromEntries(Object.entries(payload.disconnected).map(
+        ([id, deadline]) => [id, localDeadline(deadline, payload.server_now_ts)]
+      )));
+      if (payload.reveal && !payload.game_over) {
+        showReveal(payload.reveal, payload.reveal.expires_ts - payload.server_now_ts);
+      } else {
+        setReveal(null);
+      }
+      setBurned(null);
+      synced.current = true;
       setReady(true);
     }
 
@@ -79,25 +112,27 @@ export default function useRoomSocket(session) {
     }
 
     function onTurnChanged(payload) {
-      declaredRef.current = payload.round_declared_value;
+      clearTimeout(overdueTimer);
+      const deadline = localDeadline(payload.turn_deadline_ts, payload.server_now_ts);
+      if (deadline != null) {
+        // Recover a missed turn update after suspension or a stalled mobile transport.
+        overdueTimer = setTimeout(onVisible, Math.max(0, deadline - Date.now()) + 2000);
+      }
       setTurn({
         activePlayerId: payload.active_player_id,
         roundDeclaredValue: payload.round_declared_value,
         turnNumber: payload.turn_number,
-        turnDeadline: payload.turn_deadline_ts == null ? null :
-          Date.now() + payload.turn_deadline_ts - payload.server_now_ts,
+        turnDeadline: deadline,
         timedOutPlayerId: payload.timed_out_player_id,
       });
     }
 
     function onCardsPlayed(payload) {
-      declaredRef.current = payload.declared_value;
-      pileSizeRef.current = payload.pile_size;
       setPile({
         size: payload.pile_size,
         lastPlayerId: payload.player_id,
         lastCount: payload.count,
-        doubtDeadline: payload.doubt_deadline_ts,
+        doubtDeadline: localDeadline(payload.doubt_deadline_ts, payload.server_now_ts),
       });
       setLastEvent({ type: "cards_played", payload, ts: Date.now() });
     }
@@ -108,7 +143,6 @@ export default function useRoomSocket(session) {
     }
 
     function onRoundBurned(payload) {
-      pileSizeRef.current = 0;
       setPile({ size: 0, lastPlayerId: null, lastCount: null, doubtDeadline: null });
       setBurned(payload);
       setLastEvent({ type: "round_burned", payload, ts: Date.now() });
@@ -116,13 +150,18 @@ export default function useRoomSocket(session) {
       burnedTimer.current = setTimeout(() => setBurned(null), 3200);
     }
 
+    function showReveal(payload, remaining) {
+      if (payload.expires_ts === lastReveal.current) return;
+      lastReveal.current = payload.expires_ts;
+      clearTimeout(revealTimer.current);
+      setReveal(payload);
+      revealTimer.current = setTimeout(() => setReveal(null), Math.max(0, remaining));
+    }
+
     function onDoubtResolved(payload) {
       setPile({ size: 0, lastPlayerId: null, lastCount: null, doubtDeadline: null });
-      setReveal({ ...payload, declared_value: declaredRef.current, pile_count: pileSizeRef.current });
+      showReveal(payload, payload.expires_ts - payload.server_now_ts);
       setLastEvent({ type: "doubt_resolved", payload, ts: Date.now() });
-      pileSizeRef.current = 0;
-      clearTimeout(revealTimer.current);
-      revealTimer.current = setTimeout(() => setReveal(null), 5500);
     }
 
     function onPlayerDisconnected(payload) {
@@ -147,6 +186,7 @@ export default function useRoomSocket(session) {
     }
 
     function onGameOver(payload) {
+      clearTimeout(overdueTimer);
       setGameOver(payload);
     }
 
@@ -154,6 +194,9 @@ export default function useRoomSocket(session) {
       pushToast(payload.message || "Something went wrong.");
     }
 
+    document.addEventListener("visibilitychange", onVisible);
+    socket.on("disconnect", onDisconnect);
+    socket.on("seat_sync", onSeatSync);
     socket.on("connect", onConnect);
     socket.on("room_update", onRoomUpdate);
     socket.on("game_started", onGameStarted);
@@ -172,6 +215,10 @@ export default function useRoomSocket(session) {
     if (socket.connected) onConnect();
 
     return () => {
+      clearTimeout(overdueTimer);
+      document.removeEventListener("visibilitychange", onVisible);
+      socket.off("disconnect", onDisconnect);
+      socket.off("seat_sync", onSeatSync);
       socket.off("connect", onConnect);
       socket.off("room_update", onRoomUpdate);
       socket.off("game_started", onGameStarted);
@@ -192,30 +239,19 @@ export default function useRoomSocket(session) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomCode, sessionToken]);
 
-  const updateSettings = useCallback(
-    (settings) => socket.emit("update_settings", { room_code: roomCode, player_id: playerId, settings }),
-    [roomCode, playerId]
-  );
-  const setPlayerReady = useCallback(
-    () => socket.emit("player_ready", { room_code: roomCode, player_id: playerId }),
-    [roomCode, playerId]
-  );
-  const playCards = useCallback(
-    (cardIds, declaredValue) => {
-      const payload = { room_code: roomCode, player_id: playerId, card_ids: cardIds };
-      if (declaredValue !== undefined && declaredValue !== null) payload.declared_value = declaredValue;
-      socket.emit("play_cards", payload);
-    },
-    [roomCode, playerId]
-  );
-  const passTurn = useCallback(
-    () => socket.emit("pass_turn", { room_code: roomCode, player_id: playerId }),
-    [roomCode, playerId]
-  );
-  const callDoubt = useCallback(
-    () => socket.emit("call_doubt", { room_code: roomCode, player_id: playerId }),
-    [roomCode, playerId]
-  );
+  const submit = useCallback((event, payload = {}) => {
+    if (synced.current && socket.connected) {
+      socket.emit(event, { ...payload, room_code: roomCode, player_id: playerId });
+    }
+  }, [roomCode, playerId]);
+
+  const updateSettings = (settings) => submit("update_settings", { settings });
+  const setPlayerReady = () => submit("player_ready");
+  const playCards = (cardIds, declaredValue) => submit("play_cards", {
+    card_ids: cardIds, declared_value: declaredValue,
+  });
+  const passTurn = () => submit("pass_turn");
+  const callDoubt = () => submit("call_doubt");
   const dismissReveal = useCallback(() => setReveal(null), []);
 
   return {

@@ -105,6 +105,7 @@ class Game:
         self.pending_winner: str | None = None
         self.state: str = "playing"  # "playing" | "finished"
         self.winner_id: str | None = None
+        self.result: dict[str, str] | None = None
         self._deal()
 
     # ------------------------------------------------------------- dealing
@@ -169,7 +170,11 @@ class Game:
                     player_id, "invalid_declaration", "The declared value is locked for this round."
                 )
             ]
-        if len(card_ids) == len(player.hand) and player.doubts_made < self.settings.min_doubts:
+        if (
+            len(card_ids) == len(player.hand)
+            and player.doubts_made < self.settings.min_doubts
+            and not self.last_card_opening()
+        ):
             need = self.settings.min_doubts - player.doubts_made
             return [
                 self._error(
@@ -407,22 +412,23 @@ class Game:
     def _finish(self, winner_id: str, reason: str) -> list[Event]:
         self.state = "finished"
         self.winner_id = winner_id
-        return [
-            Event(
-                "game_over",
-                {
-                    "winner_id": winner_id,
-                    "winner_name": self._by_id[winner_id].name,
-                    "reason": reason,
-                },
-            )
-        ]
+        self.result = {
+            "winner_id": winner_id, "winner_name": self._by_id[winner_id].name, "reason": reason,
+        }
+        return [Event("game_over", self.result)]
 
     def _hand_event(self, player: Player) -> Event:
         return Event(
             "hand_updated",
             {"your_hand": [c.to_dict() for c in player.hand]},
             to=player.id,
+        )
+
+    def last_card_opening(self) -> bool:
+        """An empty round can otherwise leave every remaining seat forced to pass."""
+        return self.state == "playing" and not self.pile and self.round_declared_value is None and all(
+            len(self._by_id[pid].hand) == 1 and self._by_id[pid].doubts_made < self.settings.min_doubts
+            for pid in self.turn_order
         )
 
     def turn_event(self) -> Event:
