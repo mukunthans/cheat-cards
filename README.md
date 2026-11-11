@@ -2,6 +2,8 @@
 
 A real-time, turn-based online card game for 2–4 players (the "Cheat / BS" card game).
 
+See the [release history](CHANGELOG.md) for the rules, features, and fixes introduced in each version.
+
 ## Quick Start
 
 ### Server

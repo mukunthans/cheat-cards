@@ -96,6 +96,7 @@ class Game:
         self._by_id: dict[str, Player] = {p.id: p for p in self.players}
         self.turn_order: list[str] = [p.id for p in self.players]
         self.active_index: int = 0
+        self.next_round_opener_id: str = self.turn_order[0]
         self.turn_number: int = 1
         self.round_declared_value: int | None = None
         self.pile: list[Card] = []
@@ -196,6 +197,7 @@ class Game:
         self.pile.extend(cards)
         if self.round_declared_value is None:
             self.round_declared_value = declared_value
+            self.next_round_opener_id = self.turn_order[(self.active_index + 1) % len(self.turn_order)]
         self.last_play = (player_id, cards)
         self.passed_players.clear()
         self.doubt_window_open = True
@@ -272,7 +274,7 @@ class Game:
         receiver = self._by_id[receiver_id]
         receiver.hand.extend(self.pile)
         self.pile = []
-        new_starter_id = self.active_player_id
+        self.active_index = self.turn_order.index(self.next_round_opener_id)
 
         events = [
             Event(
@@ -283,7 +285,7 @@ class Game:
                     "was_lie": was_lie,
                     "revealed_cards": [c.to_dict() for c in played_cards],
                     "pile_goes_to": receiver_id,
-                    "new_starter_id": new_starter_id,
+                    "new_starter_id": self.next_round_opener_id,
                 },
             ),
             self._hand_event(receiver),
@@ -322,6 +324,8 @@ class Game:
             self.doubt_window_open = False
         was_active = self.turn_order[self.active_index] == player_id
         idx = self.turn_order.index(player_id)
+        if player_id == self.next_round_opener_id:
+            self.next_round_opener_id = self.turn_order[(idx + 1) % len(self.turn_order)]
         self.turn_order.remove(player_id)
         if idx < self.active_index:
             self.active_index -= 1
@@ -391,6 +395,7 @@ class Game:
         if not self.pile or not self.passed_players.issuperset(self.turn_order):
             return []
         burned = len(self.pile)
+        self.active_index = self.turn_order.index(self.next_round_opener_id)
         self.pile = []
         self.round_declared_value = None
         self.last_play = None

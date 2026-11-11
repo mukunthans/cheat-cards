@@ -174,6 +174,37 @@ class TestRounds:
         assert evt(game.pass_turn("p0"), "round_burned").payload["new_starter_id"] == "p1"
 
 
+@pytest.mark.parametrize("seats", [2, 3, 4])
+def test_round_openers_rotate_after_doubts_and_passes(seats):
+    game = make_game([[2] * 8 for _ in range(seats)])
+    order = game.turn_order
+    for i in range(seats + 1):
+        opener = order[i % seats]
+        follower = order[(i + 1) % seats]
+        assert game.active_player_id == opener
+        assert game.round_declared_value is None
+        game.play_cards(opener, card_ids(game, opener, [2]), declared_value=i)
+        game.play_cards(follower, card_ids(game, follower, [2]))
+        if i % 2 == 0:
+            end = evt(game.call_doubt(opener), "doubt_resolved")
+        else:
+            for _ in order:
+                events = game.pass_turn(game.active_player_id)
+            end = evt(events, "round_burned")
+        assert end.payload["new_starter_id"] == follower
+        assert game.active_player_id == follower
+
+
+def test_rotation_follows_actual_declaration_and_skips_departed_seat():
+    game = make_game([[2, 3] for _ in range(4)])
+    game.expire_turn()  # p1 takes over the opening from p0
+    game.play_cards("p1", card_ids(game, "p1", [2]), declared_value=2)
+    game.remove_player("p2")  # p3 now follows the opener
+    game.play_cards("p3", card_ids(game, "p3", [3]))
+    end = evt(game.call_doubt("p0"), "doubt_resolved")
+    assert end.payload["new_starter_id"] == game.active_player_id == "p3"
+
+
 # ----------------------------------------------------------------- doubt
 
 class TestDoubt:
@@ -505,16 +536,17 @@ def test_all_blocked_last_card_opener(outcome):
     game.pass_turn("p0")
     game.pass_turn("p1")
     assert game.last_card_opening()
-    game.play_cards("p0", card_ids(game, "p0", [2]), 4 if outcome == "bluff" else 2)
+    assert game.active_player_id == "p1"
+    game.play_cards("p1", card_ids(game, "p1", [3]), 4 if outcome == "bluff" else 3)
     assert game.state == "playing" and game.doubt_window_open
     if outcome == "unchallenged":
         game.close_doubt_window()
     else:
-        game.call_doubt("p1")
+        game.call_doubt("p0")
     if outcome == "bluff":
-        assert game.state == "playing" and len(game.hand_of("p0")) == 1
+        assert game.state == "playing" and len(game.hand_of("p1")) == 1
     else:
-        assert game.winner_id == "p0"
+        assert game.winner_id == "p1"
 
 
 def test_quota_still_applies_when_another_single_card_seat_can_open():

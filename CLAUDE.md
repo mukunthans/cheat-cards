@@ -47,15 +47,15 @@ quota required to win.
 - **Subsequent turns in the round:** on your turn you must do exactly one of:
   1. **Play** one or more cards face-down, claiming they are the locked value (you may lie), OR
   2. **Pass** (you keep your cards, turn moves on).
-- First round: the round starter is the first player in turn order. After a doubt
-  resolution: see 2.6. After an all-pass round end: see 2.5.
+- The first seat opens the first round. Each new round starts with the next remaining seat
+  clockwise from whoever actually declared the previous number (A → B → C → A).
 - Every turn lasts 30 seconds. An opening timeout hands the declaration to the next
   seat. Once a number has been declared, a timeout counts as that player's pass.
   The clock pauses during the active player's disconnect grace and resumes on reconnect.
 ### 2.5 Round End (everyone passes)
 - The pile burns only after every remaining player has passed since the latest play,
   including the player who made it. A new play resets all passes.
-- The next seat after the final passer opens a fresh round and declares a new number.
+- The seat after the previous round’s opener declares a new number.
 ### 2.6 Doubt System
 - A doubt targets ONLY the most recent card play. You cannot doubt a pass.
 - **Doubt window:** opens the instant cards are played. Closes at whichever comes FIRST:
@@ -68,8 +68,8 @@ quota required to win.
     → the player who played picks up the ENTIRE pile.
   - If ALL flipped cards = declared value → TRUTH → the doubter picks up the ENTIRE pile.
   - Reveal ONLY the doubted cards' values to all clients (not the rest of the pile).
-- After resolution: the pile is empty. The next seat after the player whose cards were challenged
-  opens the new round, regardless of who challenged or took the pile.
+- After resolution: the pile is empty. If the game continues, the seat after the previous round’s opener
+  declares the next number, regardless of who challenged or took the pile.
 - **Quota counting:** every doubt made counts toward the doubter's quota, WIN OR LOSE.
   Quota measures doubts made, not doubts won.
 ### 2.7 Win Condition & Quota Enforcement
