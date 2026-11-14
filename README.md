@@ -1,86 +1,54 @@
 # Cheat Cards
 
-A real-time, turn-based online card game for 2–4 players (the "Cheat / BS" card game).
+A bluffing card game for **2–4 friends**. Create a room, share its five-character code, and play from your phone or computer. The opener chooses a number. Everyone else can add cards face down, pass, or challenge the previous play.
 
-See the [release history](CHANGELOG.md) for the rules, features, and fixes introduced in each version.
+**[Play Cheat Cards](https://cheat-cards.netlify.app/)** · [Alternate game link](https://cheat-cards-play.onrender.com/) · [Architecture guide](https://cheat-cards.netlify.app/architecture.html) · [Release history](CHANGELOG.md)
 
-## Quick Start
+## How a round works
 
-### Server
+- Play any number of cards from your hand under the round’s declared number. You can tell the truth or bluff.
+- Call doubt to reveal the most recent play. If any card differs from the claim, the player who laid the cards takes the pile. Otherwise the challenger takes it.
+- If everyone passes after the latest play, the pile leaves the game. Each new play clears the previous passes.
+- Players take turns opening rounds in seat order. At a three-player table, A opens, then B, then C, then A again. The opener can choose a fresh number each time.
+- To win, meet the room’s doubt requirement and empty your hand. Other players can challenge your last play. The [full rules](CLAUDE.md#24-turn--round-system) cover timeouts and the one-card exception.
+
+## Run locally
+
+From the repository root, start the Python server in one terminal:
+
 ```bash
 cd server
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-uvicorn main:asgi_app --reload --port 8000
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+python -m uvicorn main:asgi_app --reload --port 8000
 ```
 
-### Client
+In a second terminal, start the React frontend:
+
 ```bash
 cd client
-npm install
+npm ci
 npm run dev
 ```
 
-Open http://localhost:5173
+To play multiplayer on one computer, open a separate tab for each seat. [Player 1](http://localhost:5173/?seat=1) creates the room. [Player 2](http://localhost:5173/?seat=2), [Player 3](http://localhost:5173/?seat=3), and [Player 4](http://localhost:5173/?seat=4) can join with its code. The game starts when at least two players have joined and everyone in the room is ready.
 
-## Testing 2–4 players on one machine
+## Test and build
 
-`localStorage` is shared by every tab on an origin, so a second tab at
-`localhost:5173` would reconnect as the *first* player rather than joining as a new
-one. Add a `?seat=` parameter to namespace the stored session per tab:
+With the server virtual environment active, run these commands from the repository root:
 
-| Tab | URL |
-|---|---|
-| Player 1 | `http://localhost:5173/?seat=1` |
-| Player 2 | `http://localhost:5173/?seat=2` |
-| Player 3 | `http://localhost:5173/?seat=3` |
-| Player 4 | `http://localhost:5173/?seat=4` |
+```bash
+python -m pytest -q server/tests
+npm --prefix client run build
+```
 
-Each is an independent player in an ordinary browser tab — no separate browsers or
-private windows needed. Refreshing a tab keeps its seat, so the 30-second reconnect
-grace can be tested by reloading (or closing and reopening the same `?seat=` URL)
-mid-game. With no `?seat=` the keys are unchanged, so the deployed app behaves
-exactly as before.
+The tests exercise the game rules and multiplayer connections, including challenges, turn timers, reconnects, and private hand updates.
 
-Create a room in seat 1, copy the 5-character room code, and join with it from the
-other seats. The game starts once at least two players are ready.
+## Hosting
 
-## Deployment
+Netlify and Render each serve a copy of the React frontend. Players on either site can join the same room because their browsers connect directly to one FastAPI and Socket.IO server on Render. The server holds hands, rooms, and timers in memory. A server restart clears active games.
 
-The server is a FastAPI + Socket.IO app deployed as a container on Render's free
-tier; the client is a static Vite build on Netlify's free tier. Neither requires a
-credit card. Both configs are checked in — the deploy itself needs your own
-Render/Netlify login, which only you can do (see below), but everything after that
-login is a couple of clicks or commands.
+For another deployment, build the frontend with `VITE_SERVER_URL` set to the backend’s HTTPS URL. Set `CORS_ORIGINS` on the backend to the comma-separated list of frontend origins. The local Vite server already proxies game connections to port 8000.
 
-### Server → Render
-[`server/render.yaml`](server/render.yaml) and [`server/Dockerfile`](server/Dockerfile)
-are ready to go.
-1. On [dashboard.render.com](https://dashboard.render.com), **New → Blueprint**,
-   connect GitHub, pick this repo. Render detects `server/render.yaml` and proposes
-   the `cheat-cards-server` web service on the free plan — confirm it.
-2. Deploy. Once live, Render shows the URL (e.g.
-   `https://cheat-cards-server.onrender.com`).
-
-Free-tier services spin down after 15 minutes of inactivity and take 30-60s to wake
-on the next request — the first player to open the room after a quiet period will
-see a slightly slow initial connect.
-
-### Client → Netlify
-[`client/netlify.toml`](client/netlify.toml) has the build command and output dir.
-Easiest path is the Netlify dashboard (no CLI needed):
-1. On [app.netlify.com](https://app.netlify.com), **Add new site → Import an
-   existing project**, connect GitHub, pick this repo, and set **Base directory**
-   to `client`. It reads `client/netlify.toml` for the rest.
-2. In **Site configuration → Environment variables**, add `VITE_SERVER_URL` set to
-   your Render server URL from above (e.g. `https://cheat-cards-server.onrender.com`
-   — no trailing slash). This is read at build time, so redeploy after adding/changing it.
-3. Deploy. Share the resulting `*.netlify.app` URL — that's the room link for friends.
-
-(Or via CLI from `client/`: `netlify login`, `netlify init`, `netlify deploy --prod`.)
-
-### Updating CORS after both are live
-Once you have the real Netlify URL, set `CORS_ORIGINS` on the Render service
-(**Environment** tab in the dashboard, or edit the `envVars` block in
-`server/render.yaml` and push) to it, redeploy the server, so only your client can
-open a socket connection.
+[Render configuration](server/render.yaml) · [Dockerfile](server/Dockerfile) · [Netlify configuration](client/netlify.toml) · [Backend health check](https://cheat-cards.onrender.com/health)
